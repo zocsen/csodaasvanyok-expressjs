@@ -29,12 +29,10 @@ router.get(`/`, async (req, res) => {
     }
 
     // Replace the image URL with S3 URL
-    if (product.image && product.image.startsWith('https://')) {
         product.image = s3.getSignedUrl('getObject', {
             Bucket: process.env.AWS_BUCKET_NAME,
             Key: product.image.split(process.env.AWS_BUCKET_NAME + '/')[1]
         });
-    }
 
     res.send(productList);
 });
@@ -47,12 +45,10 @@ router.get(`/:id`, async (req, res) => {
     }
 
     // Replace the image URL with S3 URL
-    if (product.image && product.image.startsWith('https://')) {
         product.image = s3.getSignedUrl('getObject', {
             Bucket: process.env.AWS_BUCKET_NAME,
             Key: product.image.split(process.env.AWS_BUCKET_NAME + '/')[1]
         });
-    }
 
     res.send(product);
 });
