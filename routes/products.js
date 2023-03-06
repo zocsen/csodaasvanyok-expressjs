@@ -40,6 +40,7 @@ router.get(`/`, async (req, res) => {
 });
 
 router.get(`/:id`, async (req, res) => {
+    console.log("itt még jó 1");
     const product = await Product.findById(req.params.id).populate('category');
 
     if (!product) {
@@ -47,12 +48,12 @@ router.get(`/:id`, async (req, res) => {
     }
 
     // Replace the image URL with S3 URL
-    if (product.image && product.image.startsWith('https://')) {
-        product.image = s3.getSignedUrl('getObject', {
-            Bucket: process.env.AWS_BUCKET_NAME,
-            Key: product.image.split(process.env.AWS_BUCKET_NAME + '/')[1]
-        });
-    }
+    // if (product.image && product.image.startsWith('https://')) {
+    //     product.image = s3.getSignedUrl('getObject', {
+    //         Bucket: process.env.AWS_BUCKET_NAME,
+    //         Key: product.image.split(process.env.AWS_BUCKET_NAME + '/')[1]
+    //     });
+    // }
 
     res.send(product);
 });
@@ -118,6 +119,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
 });
 
 router.put('/:id', uploadOptions.single('image'), async (req, res) => {
+    console.log("itt még jó 2");
     if (!mongoose.isValidObjectId(req.params.id)) {
         return res.status(400).send('Invalid Product Id');
     }
