@@ -73,12 +73,11 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
 
     // Create a unique filename for the image to be stored in S3
     const fileName = file.originalname;
-    const folderName = 'product-images';
 
     // Set up the S3 upload parameters
     const params = {
         Bucket: process.env.AWS_BUCKET_NAME,
-        Key: `${folderName}/${fileName}`,
+        Key: `${fileName}`,
         Body: file.buffer
     };
 
@@ -96,7 +95,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
             name: req.body.name,
             description: req.body.description,
             richDescription: req.body.richDescription,
-            image: `${basePath}${folderName}/${fileName}`,
+            image: `${basePath}/${fileName}`,
             brand: req.body.brand,
             price: req.body.price,
             category: req.body.category,
