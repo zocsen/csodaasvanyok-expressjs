@@ -4,16 +4,30 @@ const { Category } = require('../models/category');
 const router = express.Router();
 const mongoose = require('mongoose');
 const multer = require('multer');
-const AWS = require('aws-sdk');
 
-// Create an instance of the AWS S3 object with the access key ID and secret access key
-const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+const FILE_TYPE_MAP = {
+    'image/png': 'png',
+    'image/jpeg': 'jpeg',
+    'image/jpg': 'jpg'
+};
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const isValid = FILE_TYPE_MAP[file.mimetype];
+        let uploadError = new Error('invalid image type');
+
+        if (isValid) {
+            uploadError = null;
+        }
+        cb(uploadError, 'public/uploads');
+    },
+    filename: function (req, file, cb) {
+        const fileName = file.originalname.split(' ').join('-');
+        const extension = FILE_TYPE_MAP[file.mimetype];
+        cb(null, `${fileName}-${Date.now()}.${extension}`);
+    }
 });
 
-// Use multer memory storage to upload files to memory instead of the local file system
-const storage = multer.memoryStorage();
 const uploadOptions = multer({ storage: storage });
 
 router.get(`/`, async (req, res) => {
@@ -27,7 +41,6 @@ router.get(`/`, async (req, res) => {
     if (!productList) {
         res.status(500).json({ success: false });
     }
-
     res.send(productList);
 });
 
@@ -37,76 +50,37 @@ router.get(`/:id`, async (req, res) => {
     if (!product) {
         res.status(500).json({ success: false });
     }
-
-    // Replace the image URL with S3 URL
-    if (product.image && product.image.startsWith('https://')) {
-        product.image = s3.getSignedUrl('getObject', {
-            Bucket: process.env.AWS_BUCKET_NAME,
-            Key: product.image.split(process.env.AWS_BUCKET_NAME + '/')[1]
-        });
-    }
-
     res.send(product);
 });
 
 router.post(`/`, uploadOptions.single('image'), async (req, res) => {
-    // Retrieve the category from the database using its ID
     const category = await Category.findById(req.body.category);
-    if (!category) {
-        return res.status(400).send('Invalid Category');
-    }
+    if (!category) return res.status(400).send('Invalid Category');
 
-    // Retrieve the uploaded file from the request
     const file = req.file;
-    if (!file) {
-        return res.status(400).send('No image in the request');
-    }
+    if (!file) return res.status(400).send('No image in the request');
 
-    // Create a unique filename for the image to be stored in S3
-    const fileName = file.originalname;
-    const folderName = 'product-images';
-
-    // Set up the S3 upload parameters
-    const params = {
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: `${folderName}/${fileName}`,
-        Body: file.buffer
-    };
-
-    // Upload the file to S3
-    s3.upload(params, async (err, data) => {
-        if (err) {
-            return res.status(500).send('The product image could not be uploaded to AWS S3');
-        }
-
-        // Construct the base URL for the product image
-        const basePath = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`;
-
-        // Create a new product object with the uploaded image URL
-        let product = new Product({
-            name: req.body.name,
-            description: req.body.description,
-            richDescription: req.body.richDescription,
-            image: `${basePath}${folderName}/${fileName}`,
-            brand: req.body.brand,
-            price: req.body.price,
-            category: req.body.category,
-            countInStock: req.body.countInStock,
-            rating: req.body.rating,
-            numReviews: req.body.numReviews,
-            isFeatured: req.body.isFeatured
-        });
-
-        // Save the product to the database
-        product = await product.save();
-
-        if (!product) {
-            return res.status(500).send('The product cannot be created');
-        }
-
-        // Send the product object as the response to the client
-        res.send(product);
+    const fileName = file.filename;
+    const basePath = `https://${req.get('host')}/public/uploads/`;
+    let product = new Product({
+        name: req.body.name,
+        description: req.body.description,
+        richDescription: req.body.richDescription,
+        image: `${basePath}${fileName}`, // "http://localhost:3000/public/upload/image-2323232"
+        brand: req.body.brand,
+        price: req.body.price,
+        category: req.body.category,
+        countInStock: req.body.countInStock,
+        rating: req.body.rating,
+        numReviews: req.body.numReviews,
+        isFeatured: req.body.isFeatured
     });
+
+    product = await product.save();
+
+    if (!product) return res.status(500).send('The product cannot be created');
+
+    res.send(product);
 });
 
 router.put('/:id', uploadOptions.single('image'), async (req, res) => {
@@ -123,13 +97,9 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     let imagepath;
 
     if (file) {
-        const params = {
-            Bucket: process.env.AWS_BUCKET_NAME,
-            Key: `${Date.now()}_${file.originalname}`,
-            Body: file.buffer,
-        };
-        const data = await s3.upload(params).promise();
-        imagepath = data.Location;
+        const fileName = file.filename;
+        const basePath = `https://${req.get('host')}/public/uploads/`;
+        imagepath = `${basePath}${fileName}`;
     } else {
         imagepath = product.image;
     }
@@ -193,6 +163,33 @@ router.get(`/get/featured/:count`, async (req, res) => {
         res.status(500).json({ success: false });
     }
     res.send(products);
+});
+
+router.put('/gallery-images/:id', uploadOptions.array('images', 10), async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(400).send('Invalid Product Id');
+    }
+    const files = req.files;
+    let imagesPaths = [];
+    const basePath = `https://${req.get('host')}/public/uploads/`;
+
+    if (files) {
+        files.map((file) => {
+            imagesPaths.push(`${basePath}${file.filename}`);
+        });
+    }
+
+    const product = await Product.findByIdAndUpdate(
+        req.params.id,
+        {
+            images: imagesPaths
+        },
+        { new: true }
+    );
+
+    if (!product) return res.status(500).send('the gallery cannot be updated!');
+
+    res.send(product);
 });
 
 module.exports = router;
