@@ -11,7 +11,7 @@ const { verifyToken } = require('./authMiddleware');
 app.use(cors({
   origin: ["https://zocsen.github.io", "http://localhost:4100"],
   optionsSuccessStatus: 200,
-  //credentials: true
+  credentials: true
 }))
 
 //app.options("*", cors());
