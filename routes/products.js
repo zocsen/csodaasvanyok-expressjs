@@ -1,6 +1,7 @@
 const express = require('express');
 const { Product } = require('../models/product');
 const { Category } = require('../models/category');
+const { Mineral } = require('../models/mineral');
 const router = express.Router();
 const mongoose = require('mongoose');
 const multer = require('multer');
@@ -40,20 +41,11 @@ router.get(`/`, async (req, res) => {
 });
 
 router.get(`/:id`, async (req, res) => {
-    console.log("itt még jó 1");
     const product = await Product.findById(req.params.id).populate('category');
 
     if (!product) {
         res.status(500).json({ success: false });
     }
-
-    // Replace the image URL with S3 URL
-    // if (product.image && product.image.startsWith('https://')) {
-    //     product.image = s3.getSignedUrl('getObject', {
-    //         Bucket: process.env.AWS_BUCKET_NAME,
-    //         Key: product.image.split(process.env.AWS_BUCKET_NAME + '/')[1]
-    //     });
-    // }
 
     res.send(product);
 });
@@ -94,14 +86,10 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
         let product = new Product({
             name: req.body.name,
             description: req.body.description,
-            richDescription: req.body.richDescription,
             image: `${basePath}/${fileName}`,
-            brand: req.body.brand,
             price: req.body.price,
             category: req.body.category,
-            countInStock: req.body.countInStock,
-            rating: req.body.rating,
-            numReviews: req.body.numReviews,
+            mineral: req.body.mineral,
             isFeatured: req.body.isFeatured
         });
 
@@ -148,14 +136,9 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
         {
             name: req.body.name,
             description: req.body.description,
-            richDescription: req.body.richDescription,
             image: imagepath,
-            brand: req.body.brand,
             price: req.body.price,
             category: req.body.category,
-            countInStock: req.body.countInStock,
-            rating: req.body.rating,
-            numReviews: req.body.numReviews,
             isFeatured: req.body.isFeatured
         },
         { new: true }

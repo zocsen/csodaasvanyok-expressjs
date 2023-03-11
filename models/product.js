@@ -9,10 +9,6 @@ const productSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    richDescription: {
-        type: String,
-        default: ''
-    },
     image: {
         type: String,
         default: ''
@@ -20,10 +16,6 @@ const productSchema = mongoose.Schema({
     images: [{
         type: String
     }],
-    // brand: {
-    //     type: String,
-    //     default: ''
-    // },
     price : {
         type: Number,
         default:0
@@ -33,20 +25,11 @@ const productSchema = mongoose.Schema({
         ref: 'Category',
         required:true
     },
-    // countInStock: {
-    //     type: Number,
-    //     required: false,
-    //     min: 0,
-    //     max: 255
-    // },
-    // rating: {
-    //     type: Number,
-    //     default: 0,
-    // },
-    // numReviews: {
-    //     type: Number,
-    //     default: 0,
-    // },
+    minerals: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Mineral',
+        required: true
+    }],
     isFeatured: {
         type: Boolean,
         default: false,
