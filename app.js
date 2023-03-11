@@ -9,7 +9,7 @@ const errorHandler = require("./helpers/error-handler");
 const { verifyToken } = require('./authMiddleware');
 
 app.use(cors({
-  origin: ["https://zocsen.github.io"],
+  origin: ["https://zocsen.github.io", //"http://localhost:4100"],
   optionsSuccessStatus: 200,
   //credentials: true
 }))
