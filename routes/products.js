@@ -2,10 +2,12 @@ const express = require('express');
 const { Product } = require('../models/product');
 const { Category } = require('../models/category');
 const { Mineral } = require('../models/mineral');
+const { Subcategory } = require('../models/subcategory');
 const router = express.Router();
 const mongoose = require('mongoose');
 const multer = require('multer');
 const AWS = require('aws-sdk');
+const ObjectId = require('mongodb').ObjectId;
 
 // Create an instance of the AWS S3 object with the access key ID and secret access key
 const s3 = new AWS.S3({
@@ -22,8 +24,16 @@ router.get(`/`, async (req, res) => {
     if (req.query.categories) {
         filter = { category: req.query.categories.split(',') };
     }
+    if (req.query.minerals) {
+        filter = { mineral: req.query.minerals.split(',') };
+    }
+    if (req.query.subcategories) {
+        filter = { subcategory: req.query.subcategories.split(',') };
+    }
 
-    const productList = await Product.find(filter).populate('category');
+
+    //
+    const productList = await Product.find(filter).populate('category').populate('mineral').populate('subcategory');
 
     if (!productList) {
         res.status(500).json({ success: false });
@@ -41,7 +51,7 @@ router.get(`/`, async (req, res) => {
 });
 
 router.get(`/:id`, async (req, res) => {
-    const product = await Product.findById(req.params.id).populate('category');
+    const product = await Product.findById(req.params.id).populate('category').populate('mineral').populate('subcategory');
 
     if (!product) {
         res.status(500).json({ success: false });
@@ -56,7 +66,8 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
     if (!category) {
         return res.status(400).send('Invalid Category');
     }
-
+    // TODO DO the above for mineral and subcategory without breaking the program due ID Array!!
+    
     // Retrieve the uploaded file from the request
     const file = req.file;
     if (!file) {
@@ -83,19 +94,26 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
         const basePath = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`;
 
         // Create a new product object with the uploaded image URL
+
+        const mineralString = req.body.mineral;
+        const mineralArray = mineralString.split(",").map(id => new ObjectId(id));
+        const subcategoryString = req.body.subcategory;
+        const subcategoryArray = subcategoryString.split(",").map(id => new ObjectId(id));
+
         let product = new Product({
             name: req.body.name,
             description: req.body.description,
             image: `${basePath}/${fileName}`,
             price: req.body.price,
             category: req.body.category,
-            mineral: req.body.mineral,
+            mineral: mineralArray,
+            subcategory: subcategoryArray,
             isFeatured: req.body.isFeatured
         });
 
         // Save the product to the database
         product = await product.save();
-
+        
         if (!product) {
             return res.status(500).send('The product cannot be created');
         }
@@ -112,6 +130,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     }
     const category = await Category.findById(req.body.category);
     if (!category) return res.status(400).send('Invalid Category');
+    // TODO DO the above for mineral and subcategory without breaking the program due ID Array!!
 
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(400).send('Invalid Product!');
@@ -131,6 +150,11 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
         imagepath = product.image;
     }
 
+    const mineralString = req.body.mineral
+    const mineralArray = mineralString.split(",").map(id => new ObjectId(id));
+    const subcategoryString = req.body.subcategory;
+    const subcategoryArray = subcategoryString.split(",").map(id => new ObjectId(id));
+
     const updatedProduct = await Product.findByIdAndUpdate(
         req.params.id,
         {
@@ -139,6 +163,8 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             image: imagepath,
             price: req.body.price,
             category: req.body.category,
+            mineral: mineralArray,
+            subcategory: subcategoryArray,
             isFeatured: req.body.isFeatured
         },
         { new: true }

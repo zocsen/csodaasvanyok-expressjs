@@ -26,7 +26,6 @@ router.post('/', async (req,res)=>{
     let mineral = new Mineral({
         name: req.body.name,
         description: req.body.description,
-        color: req.body.color
     })
     mineral = await mineral.save();
 
@@ -43,7 +42,6 @@ router.put('/:id',async (req, res)=> {
         {
             name: req.body.name,
             description: req.body.description,
-            color: req.body.color,
         },
         { new: true}
     )

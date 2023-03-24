@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const mineralSchema = mongoose.Schema({
+const subcategorySchema = mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -11,12 +11,12 @@ const mineralSchema = mongoose.Schema({
 })
 
 
-mineralSchema.virtual('id').get(function () {
+subcategorySchema.virtual('id').get(function () {
     return this._id.toHexString();
 });
 
-mineralSchema.set('toJSON', {
+subcategorySchema.set('toJSON', {
     virtuals: true,
 });
 
-exports.Mineral = mongoose.model('Mineral', mineralSchema);
+exports.Subcategory = mongoose.model('Subcategory', subcategorySchema);

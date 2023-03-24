@@ -23,12 +23,17 @@ const productSchema = mongoose.Schema({
     category: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category',
-        required:true
+        required: true,
     },
-    minerals: [{
+    mineral: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Mineral',
         required: true
+    }],
+    subcategory: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Subcategory',
+        required: true,
     }],
     isFeatured: {
         type: Boolean,

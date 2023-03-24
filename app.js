@@ -9,8 +9,10 @@ const errorHandler = require("./helpers/error-handler");
 const { verifyToken } = require('./authMiddleware');
 
 app.use(cors({
-  origin: ["https://zocsen.github.io",
-   //"http://localhost:4100
+  origin: [
+    "https://zocsen.github.io",
+    //"http://localhost:4100",
+    //"http://localhost:4200",
   ],
   optionsSuccessStatus: 200,
   //credentials: true
@@ -26,6 +28,7 @@ app.use(errorHandler);
 //Routes
 const categoriesRoutes = require("./routes/categories");
 const mineralsRoutes = require("./routes/minerals");
+const subcategoriesRoutes = require("./routes/subcategories");
 const productsRoutes = require("./routes/products");
 const usersRoutes = require("./routes/users");
 const ordersRoutes = require("./routes/orders");
@@ -35,6 +38,7 @@ const api = process.env.API_URL;
 
 app.use(`${api}/categories`, categoriesRoutes);
 app.use(`${api}/minerals`, mineralsRoutes);
+app.use(`${api}/subcategories`, subcategoriesRoutes);
 app.use(`${api}/products`, productsRoutes);
 app.use(`${api}/users`, usersRoutes);
 app.use(`${api}/orders`, ordersRoutes);
