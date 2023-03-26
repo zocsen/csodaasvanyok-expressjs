@@ -13,6 +13,7 @@ app.use(cors({
     "https://zocsen.github.io",
     //"http://localhost:4100",
     //"http://localhost:4200",
+    //"http://localhost:4300",
   ],
   optionsSuccessStatus: 200,
   //credentials: true
