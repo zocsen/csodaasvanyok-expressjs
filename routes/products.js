@@ -108,7 +108,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
             category: req.body.category,
             mineral: mineralArray,
             subcategory: subcategoryArray,
-            isFeatured: req.body.isFeatured
+            //isFeatured: req.body.isFeatured
         });
 
         // Save the product to the database
@@ -165,7 +165,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             category: req.body.category,
             mineral: mineralArray,
             subcategory: subcategoryArray,
-            isFeatured: req.body.isFeatured
+            //isFeatured: req.body.isFeatured
         },
         { new: true }
     );

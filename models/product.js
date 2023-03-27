@@ -35,10 +35,10 @@ const productSchema = mongoose.Schema({
         ref: 'Subcategory',
         required: true,
     }],
-    isFeatured: {
-        type: Boolean,
-        default: false,
-    },
+    // isFeatured: {
+    //     type: Boolean,
+    //     default: false,
+    // },
     dateCreated: {
         type: Date,
         default: Date.now,
