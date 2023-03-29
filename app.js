@@ -10,7 +10,6 @@ const { verifyToken } = require('./authMiddleware');
 
 app.use(cors({
   origin: [
-    "https://zocsen.github.io",
     "https://csodaasvanyok.hu",
     process.env.LOCALHOST
   ],
@@ -32,7 +31,6 @@ const subcategoriesRoutes = require("./routes/subcategories");
 const productsRoutes = require("./routes/products");
 const usersRoutes = require("./routes/users");
 const ordersRoutes = require("./routes/orders");
-
 
 const api = process.env.API_URL;
 
