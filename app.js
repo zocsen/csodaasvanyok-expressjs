@@ -11,6 +11,7 @@ const { verifyToken } = require('./authMiddleware');
 app.use(cors({
   origin: [
     "https://zocsen.github.io",
+    "https://csodaasvanyok.hu",
     process.env.LOCALHOST
   ],
   optionsSuccessStatus: 200,
