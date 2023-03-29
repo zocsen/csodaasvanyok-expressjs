@@ -10,7 +10,7 @@ const { verifyToken } = require('./authMiddleware');
 
 app.use(cors({
   origin: [
-    "https://csodaasvanyok.hu",
+    "https://www.csodaasvanyok.hu",
     process.env.LOCALHOST
   ],
   optionsSuccessStatus: 200,
