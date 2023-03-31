@@ -99,11 +99,11 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
         const mineralArray = mineralString.split(",").map(id => new ObjectId(id));
         const subcategoryString = req.body.subcategory;
         const subcategoryArray = subcategoryString.split(",").map(id => new ObjectId(id));
-
+        
         let product = new Product({
             name: req.body.name,
             description: req.body.description,
-            image: `${basePath}/${fileName}`,
+            image: `${basePath}${fileName}`,
             price: req.body.price,
             category: req.body.category,
             mineral: mineralArray,
