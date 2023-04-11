@@ -1,9 +1,16 @@
-const {Mineral} = require('../models/mineral');
+const { Mineral } = require('../models/mineral');
+const { Benefit } = require('../models/benefit');
 const express = require('express');
 const router = express.Router();
+const ObjectId = require('mongodb').ObjectId;
 
-router.get(`/`, async (req, res) =>{
-    const mineralList = await Mineral.find();
+router.get(`/`, async (req, res) => {
+    let filter = {};
+    if (req.query.benefits) {
+        filter = { benefit: req.query.benefits.split(',') };
+    }
+
+    const mineralList = await Mineral.find(filter).populate('benefit');
 
     if(!mineralList) {
         res.status(500).json({success: false})
@@ -12,7 +19,7 @@ router.get(`/`, async (req, res) =>{
 })
 
 router.get('/:id', async(req,res)=>{
-    const mineral = await Mineral.findById(req.params.id);
+    const mineral = await Mineral.findById(req.params.id).populate('benefit');
 
     if(!mineral) {
         res.status(500).json({message: 'The mineral with the given ID was not found.'})
@@ -22,10 +29,14 @@ router.get('/:id', async(req,res)=>{
 
 
 
-router.post('/', async (req,res)=>{
+router.post('/', async (req, res) => {
+    const benefitString = req.body.benefit;
+    const benefitArray = benefitString.split(",").map(id => new ObjectId(id));
+
     let mineral = new Mineral({
         name: req.body.name,
         description: req.body.description,
+        benefit: benefitArray,
     })
     mineral = await mineral.save();
 
@@ -36,12 +47,19 @@ router.post('/', async (req,res)=>{
 })
 
 
-router.put('/:id',async (req, res)=> {
+router.put('/:id', async (req, res) => {
+    const benefitString = req.body.benefit;
+
+    if (typeof benefitString !== 'string') {
+        return res.status(400).json({ message: 'The benefit field must be a string.' });
+    }
+    const benefitArray = benefitString.split(",").map(id => new ObjectId(id));
     const mineral = await Mineral.findByIdAndUpdate(
         req.params.id,
         {
             name: req.body.name,
             description: req.body.description,
+            benefit: benefitArray
         },
         { new: true}
     )

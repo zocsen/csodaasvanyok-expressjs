@@ -8,6 +8,10 @@ const mineralSchema = mongoose.Schema({
     description: {
         type: String,
     },
+    benefit: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Benefit',
+    }]
 })
 
 
