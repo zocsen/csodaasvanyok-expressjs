@@ -35,6 +35,11 @@ const productSchema = mongoose.Schema({
         ref: 'Subcategory',
         required: true,
     }],
+    color: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Color',
+        required: true
+    }],
     // isFeatured: {
     //     type: Boolean,
     //     default: false,

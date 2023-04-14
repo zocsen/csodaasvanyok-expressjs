@@ -1,8 +1,6 @@
 const express = require('express');
 const { Product } = require('../models/product');
 const { Category } = require('../models/category');
-const { Mineral } = require('../models/mineral');
-const { Subcategory } = require('../models/subcategory');
 const router = express.Router();
 const mongoose = require('mongoose');
 const multer = require('multer');
@@ -30,10 +28,13 @@ router.get(`/`, async (req, res) => {
     if (req.query.subcategories) {
         filter = { subcategory: req.query.subcategories.split(',') };
     }
+    if (req.query.colors) {
+        filter = { color: req.query.colors.split(',') };
+    }
 
 
     //
-    const productList = await Product.find(filter).populate('category').populate('mineral').populate('subcategory');
+    const productList = await Product.find(filter).populate('category').populate('mineral').populate('subcategory').populate('color');
 
     if (!productList) {
         res.status(500).json({ success: false });
@@ -51,7 +52,7 @@ router.get(`/`, async (req, res) => {
 });
 
 router.get(`/:id`, async (req, res) => {
-    const product = await Product.findById(req.params.id).populate('category').populate('mineral').populate('subcategory');
+    const product = await Product.findById(req.params.id).populate('category').populate('mineral').populate('subcategory').populate('color');
 
     if (!product) {
         res.status(500).json({ success: false });
@@ -99,6 +100,8 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
         const mineralArray = mineralString.split(",").map(id => new ObjectId(id));
         const subcategoryString = req.body.subcategory;
         const subcategoryArray = subcategoryString.split(",").map(id => new ObjectId(id));
+        const colorString = req.body.color;
+        const colorArray = colorString.split(",").map(id => new ObjectId(id));
         
         let product = new Product({
             name: req.body.name,
@@ -108,6 +111,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
             category: req.body.category,
             mineral: mineralArray,
             subcategory: subcategoryArray,
+            color: colorArray,
             //isFeatured: req.body.isFeatured
         });
 
@@ -154,6 +158,8 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     const mineralArray = mineralString.split(",").map(id => new ObjectId(id));
     const subcategoryString = req.body.subcategory;
     const subcategoryArray = subcategoryString.split(",").map(id => new ObjectId(id));
+    const colorString = req.body.color;
+    const colorArray = colorString.split(",").map(id => new ObjectId(id));
 
     const updatedProduct = await Product.findByIdAndUpdate(
         req.params.id,
@@ -165,6 +171,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             category: req.body.category,
             mineral: mineralArray,
             subcategory: subcategoryArray,
+            color: colorArray,
             //isFeatured: req.body.isFeatured
         },
         { new: true }
