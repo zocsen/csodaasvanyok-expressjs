@@ -82,6 +82,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
 
     const resizedImageBuffer = await sharp(file.buffer)
         .resize({ width: 800, height: 800, fit: 'inside' })
+        .withMetadata()
         .toBuffer();
 
     // Set up the S3 upload parameters
@@ -149,7 +150,8 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
 
     const resizedImageBuffer = await sharp(file.buffer)
         .resize({ width: 800, height: 800, fit: 'inside' })
-        .toBuffer();
+        .withMetadata()
+        .toBuffer()
     
     let imagepath;
 
