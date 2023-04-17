@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
 function verifyToken(req, res, next) {
   const token = req.body.token;
