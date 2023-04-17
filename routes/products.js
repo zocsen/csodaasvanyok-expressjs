@@ -146,13 +146,18 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     if (!product) return res.status(400).send('Invalid Product!');
 
     const file = req.file;
+
+    const resizedImageBuffer = await sharp(file.buffer)
+        .resize({ width: 800, height: 800, fit: 'inside' })
+        .toBuffer();
+    
     let imagepath;
 
     if (file) {
         const params = {
             Bucket: process.env.AWS_BUCKET_NAME,
             Key: `${Date.now()}_${file.originalname}`,
-            Body: file.buffer,
+            Body: resizedImageBuffer,
         };
         const data = await s3.upload(params).promise();
         imagepath = data.Location;
