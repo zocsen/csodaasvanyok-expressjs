@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const ObjectId = require('mongodb').ObjectId;
+const sharp = require('sharp');
 
 // Create an instance of the AWS S3 object with the access key ID and secret access key
 const s3 = new AWS.S3({
@@ -16,6 +17,7 @@ const s3 = new AWS.S3({
 // Use multer memory storage to upload files to memory instead of the local file system
 const storage = multer.memoryStorage();
 const uploadOptions = multer({ storage: storage });
+
 
 router.get(`/`, async (req, res) => {
     let filter = {};
@@ -78,11 +80,15 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
     // Create a unique filename for the image to be stored in S3
     const fileName = file.originalname;
 
+    const resizedImageBuffer = await sharp(file.buffer)
+        .resize({ width: 800, height: 800, fit: 'inside' })
+        .toBuffer();
+
     // Set up the S3 upload parameters
     const params = {
         Bucket: process.env.AWS_BUCKET_NAME,
         Key: `${fileName}`,
-        Body: file.buffer
+        Body: resizedImageBuffer
     };
 
     // Upload the file to S3
