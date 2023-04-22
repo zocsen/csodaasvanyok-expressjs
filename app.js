@@ -7,6 +7,27 @@ require("dotenv/config");
 const authJwt = require("./helpers/jwt");
 const errorHandler = require("./helpers/error-handler");
 const { verifyToken } = require('./authMiddleware');
+const cache = require('memory-cache');
+
+function cacheProductsMiddleware(duration) {
+  return (req, res, next) => {
+    const key = '__products_cache__';
+    const cachedResponse = cache.get(key);
+
+    if (cachedResponse) {
+      res.send(cachedResponse);
+      return;
+    }
+
+    res.sendResponse = res.send;
+    res.send = (body) => {
+      cache.put(key, body, duration * 1000);
+      res.sendResponse(body);
+    };
+
+    next();
+  };
+}
 
 app.use(cors({
   origin: [
@@ -41,7 +62,7 @@ app.use(`${api}/minerals`, mineralsRoutes);
 app.use(`${api}/subcategories`, subcategoriesRoutes);
 app.use(`${api}/benefits`, benefitsRoutes);
 app.use(`${api}/colors`, colorsRoutes);
-app.use(`${api}/products`, productsRoutes);
+app.use(`${api}/products`, cacheProductsMiddleware(86400), productsRoutes);
 app.use(`${api}/users`, usersRoutes);
 app.use(`${api}/orders`, ordersRoutes);
 
