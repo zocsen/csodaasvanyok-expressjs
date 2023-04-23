@@ -216,7 +216,6 @@ router.delete('/:id', (req, res) => {
         .catch((err) => {
             return res.status(500).json({ success: false, error: err });
         });
-    clearProductsCache();
 });
 
 router.get(`/get/count`, async (req, res) => {
