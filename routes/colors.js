@@ -2,7 +2,7 @@ const {Color} = require('../models/color');
 const express = require('express');
 const router = express.Router();
 
-router.get(`/`, async (req, res) =>{
+router.get(`/`, cacheMiddleware(86400), async (req, res) =>{
     const colorList = await Color.find();
 
     if(!colorList) {
@@ -11,7 +11,7 @@ router.get(`/`, async (req, res) =>{
     res.status(200).send(colorList);
 })
 
-router.get('/:id', async(req,res)=>{
+router.get('/:id', cacheMiddleware(86400), async(req,res)=>{
     const color = await Color.findById(req.params.id);
 
     if(!color) {

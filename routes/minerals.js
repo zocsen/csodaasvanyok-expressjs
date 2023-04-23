@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 const ObjectId = require('mongodb').ObjectId;
 
-router.get(`/`, async (req, res) => {
+router.get(`/`, cacheMiddleware(86400), async (req, res) => {
     let filter = {};
     if (req.query.benefits) {
         filter = { benefit: req.query.benefits.split(',') };
@@ -18,7 +18,7 @@ router.get(`/`, async (req, res) => {
     res.status(200).send(mineralList);
 })
 
-router.get('/:id', async(req,res)=>{
+router.get('/:id', cacheMiddleware(86400), async(req,res)=>{
     const mineral = await Mineral.findById(req.params.id).populate('benefit');
 
     if(!mineral) {

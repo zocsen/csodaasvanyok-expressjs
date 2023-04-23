@@ -7,27 +7,6 @@ require("dotenv/config");
 const authJwt = require("./helpers/jwt");
 const errorHandler = require("./helpers/error-handler");
 const { verifyToken } = require('./authMiddleware');
-const cache = require('memory-cache');
-
-function cacheMiddleware(duration) {
-  return (req, res, next) => {
-    const key = '__cache__' + req.originalUrl || req.url;
-    const cachedResponse = cache.get(key);
-
-    if (cachedResponse) {
-      res.send(cachedResponse);
-      return;
-    }
-
-    res.sendResponse = res.send;
-    res.send = (body) => {
-      cache.put(key, body, duration * 1000);
-      res.sendResponse(body);
-    };
-
-    next();
-  };
-}
 
 app.use(cors({
   origin: [
@@ -57,12 +36,12 @@ const ordersRoutes = require("./routes/orders");
 
 const api = process.env.API_URL;
 
-app.use(`${api}/categories`, cacheMiddleware(86400), categoriesRoutes);
-app.use(`${api}/minerals`, cacheMiddleware(86400), mineralsRoutes);
-app.use(`${api}/subcategories`, cacheMiddleware(86400), subcategoriesRoutes);
-app.use(`${api}/benefits`, cacheMiddleware(86400), benefitsRoutes);
-app.use(`${api}/colors`, cacheMiddleware(86400),colorsRoutes);
-app.use(`${api}/products`, cacheMiddleware(86400), productsRoutes);
+app.use(`${api}/categories`, categoriesRoutes);
+app.use(`${api}/minerals`, mineralsRoutes);
+app.use(`${api}/subcategories`, subcategoriesRoutes);
+app.use(`${api}/benefits`, benefitsRoutes);
+app.use(`${api}/colors`,colorsRoutes);
+app.use(`${api}/products`, productsRoutes);
 app.use(`${api}/users`, usersRoutes);
 app.use(`${api}/orders`, ordersRoutes);
 

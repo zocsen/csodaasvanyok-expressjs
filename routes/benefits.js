@@ -2,7 +2,7 @@ const {Benefit} = require('../models/benefit');
 const express = require('express');
 const router = express.Router();
 
-router.get(`/`, async (req, res) =>{
+router.get(`/`, cacheMiddleware(86400), async (req, res) =>{
     const benefitList = await Benefit.find();
 
     if(!benefitList) {
@@ -11,7 +11,7 @@ router.get(`/`, async (req, res) =>{
     res.status(200).send(benefitList);
 })
 
-router.get('/:id', async(req,res)=>{
+router.get('/:id', cacheMiddleware(86400), async(req,res)=>{
     const benefit = await Benefit.findById(req.params.id);
 
     if(!benefit) {

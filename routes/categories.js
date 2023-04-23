@@ -2,7 +2,7 @@ const {Category} = require('../models/category');
 const express = require('express');
 const router = express.Router();
 
-router.get(`/`, async (req, res) =>{
+router.get(`/`, cacheMiddleware(86400), async (req, res) =>{
     const categoryList = await Category.find();
 
     if(!categoryList) {
@@ -11,7 +11,7 @@ router.get(`/`, async (req, res) =>{
     res.status(200).send(categoryList);
 })
 
-router.get('/:id', async(req,res)=>{
+router.get('/:id', cacheMiddleware(86400), async(req,res)=>{
     const category = await Category.findById(req.params.id);
 
     if(!category) {

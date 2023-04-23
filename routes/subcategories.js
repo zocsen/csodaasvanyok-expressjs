@@ -2,7 +2,7 @@ const {Subcategory} = require('../models/subcategory');
 const express = require('express');
 const router = express.Router();
 
-router.get(`/`, async (req, res) =>{
+router.get(`/`, cacheMiddleware(86400), async (req, res) =>{
     const subcategoryList = await Subcategory.find();
 
     if(!subcategoryList) {
@@ -11,7 +11,7 @@ router.get(`/`, async (req, res) =>{
     res.status(200).send(subcategoryList);
 })
 
-router.get('/:id', async(req,res)=>{
+router.get('/:id', cacheMiddleware(86400), async(req,res)=>{
     const subcategory = await Subcategory.findById(req.params.id);
 
     if(!subcategory) {

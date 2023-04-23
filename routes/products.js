@@ -7,6 +7,7 @@ const multer = require('multer');
 const AWS = require('aws-sdk');
 const ObjectId = require('mongodb').ObjectId;
 const sharp = require('sharp');
+const { cacheMiddleware, clearProductsCache } = require('./cacheMiddleware');
 
 // Create an instance of the AWS S3 object with the access key ID and secret access key
 const s3 = new AWS.S3({
@@ -19,7 +20,7 @@ const storage = multer.memoryStorage();
 const uploadOptions = multer({ storage: storage });
 
 
-router.get(`/`, async (req, res) => {
+router.get(`/`, cacheMiddleware(86400), async (req, res) => {
     let filter = {};
     if (req.query.categories) {
         filter = { category: req.query.categories.split(',') };
@@ -53,7 +54,7 @@ router.get(`/`, async (req, res) => {
     res.send(productList);
 });
 
-router.get(`/:id`, async (req, res) => {
+router.get(`/:id`, cacheMiddleware(86400), async (req, res) => {
     const product = await Product.findById(req.params.id).populate('category').populate('mineral').populate('subcategory').populate('color');
 
     if (!product) {
@@ -129,6 +130,8 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
             return res.status(500).send('The product cannot be created');
         }
 
+        clearProductsCache();
+
         // Send the product object as the response to the client
         res.send(product);
     });
@@ -191,6 +194,8 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     );
 
     if (!updatedProduct) return res.status(500).send('the product cannot be updated!');
+    
+    clearProductsCache();
 
     res.send(updatedProduct);
 });
@@ -218,6 +223,9 @@ router.get(`/get/count`, async (req, res) => {
     if (!productCount) {
         res.status(500).json({ success: false });
     }
+
+    clearProductsCache();
+
     res.send({
         productCount: productCount
     });
