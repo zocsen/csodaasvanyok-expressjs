@@ -7,7 +7,7 @@ const multer = require('multer');
 const AWS = require('aws-sdk');
 const ObjectId = require('mongodb').ObjectId;
 const sharp = require('sharp');
-const { cacheMiddleware, clearProductsCache } = require('./cacheMiddleware');
+const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
 
 // Create an instance of the AWS S3 object with the access key ID and secret access key
 const s3 = new AWS.S3({
@@ -130,7 +130,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
             return res.status(500).send('The product cannot be created');
         }
 
-        clearProductsCache();
+        clearAllCache()
 
         // Send the product object as the response to the client
         res.send(product);
@@ -195,7 +195,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
 
     if (!updatedProduct) return res.status(500).send('the product cannot be updated!');
     
-    clearProductsCache();
+    clearAllCache()
 
     res.send(updatedProduct);
 });
@@ -204,6 +204,7 @@ router.delete('/:id', (req, res) => {
     Product.findByIdAndRemove(req.params.id)
         .then((product) => {
             if (product) {
+                clearAllCache()
                 return res.status(200).json({
                     success: true,
                     message: 'the product is deleted!'
@@ -215,6 +216,7 @@ router.delete('/:id', (req, res) => {
         .catch((err) => {
             return res.status(500).json({ success: false, error: err });
         });
+    clearProductsCache();
 });
 
 router.get(`/get/count`, async (req, res) => {
@@ -223,8 +225,6 @@ router.get(`/get/count`, async (req, res) => {
     if (!productCount) {
         res.status(500).json({ success: false });
     }
-
-    clearProductsCache();
 
     res.send({
         productCount: productCount

@@ -1,6 +1,7 @@
 const {Category} = require('../models/category');
 const express = require('express');
 const router = express.Router();
+const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
 
 router.get(`/`, cacheMiddleware(86400), async (req, res) =>{
     const categoryList = await Category.find();
@@ -33,6 +34,8 @@ router.post('/', async (req,res)=>{
     if(!category)
     return res.status(400).send('the category cannot be created!')
 
+    clearAllCache()
+
     res.send(category);
 })
 
@@ -51,12 +54,15 @@ router.put('/:id',async (req, res)=> {
     if(!category)
     return res.status(400).send('the category cannot be created!')
 
+    clearAllCache()
+
     res.send(category);
 })
 
 router.delete('/:id', (req, res)=>{
     Category.findByIdAndRemove(req.params.id).then(category =>{
-        if(category) {
+        if (category) {
+            clearAllCache()
             return res.status(200).json({success: true, message: 'the category is deleted!'})
         } else {
             return res.status(404).json({success: false , message: "category not found!"})

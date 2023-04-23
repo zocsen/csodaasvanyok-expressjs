@@ -1,6 +1,7 @@
 const {Color} = require('../models/color');
 const express = require('express');
 const router = express.Router();
+const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
 
 router.get(`/`, cacheMiddleware(86400), async (req, res) =>{
     const colorList = await Color.find();
@@ -32,6 +33,8 @@ router.post('/', async (req,res)=>{
     if(!color)
     return res.status(400).send('the color cannot be created!')
 
+    clearAllCache()
+    
     res.send(color);
 })
 
@@ -49,12 +52,15 @@ router.put('/:id',async (req, res)=> {
     if(!color)
     return res.status(400).send('the color cannot be created!')
 
+    clearAllCache()
+
     res.send(color);
 })
 
 router.delete('/:id', (req, res)=>{
     Color.findByIdAndRemove(req.params.id).then(color =>{
-        if(color) {
+        if (color) {
+            clearAllCache()
             return res.status(200).json({success: true, message: 'the color is deleted!'})
         } else {
             return res.status(404).json({success: false , message: "color not found!"})

@@ -20,9 +20,9 @@ function cacheMiddleware(duration) {
   };
 }
 
-function clearProductsCache() {
+function clearAllCache() {
   cache.keys().forEach((key) => {
-    if (key.startsWith('__cache__' + api + '/products')) {
+    if (key.startsWith('__cache__')) {
       cache.del(key);
     }
   });
@@ -30,5 +30,5 @@ function clearProductsCache() {
 
 module.exports = {
 	cacheMiddleware,
-	clearProductsCache
+	clearAllCache
 };

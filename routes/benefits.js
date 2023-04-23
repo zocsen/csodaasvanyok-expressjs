@@ -1,6 +1,7 @@
 const {Benefit} = require('../models/benefit');
 const express = require('express');
 const router = express.Router();
+const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
 
 router.get(`/`, cacheMiddleware(86400), async (req, res) =>{
     const benefitList = await Benefit.find();
@@ -31,6 +32,8 @@ router.post('/', async (req,res)=>{
     if(!benefit)
     return res.status(400).send('the benefit cannot be created!')
 
+    clearAllCache()
+
     res.send(benefit);
 })
 
@@ -47,12 +50,15 @@ router.put('/:id',async (req, res)=> {
     if(!benefit)
     return res.status(400).send('the benefit cannot be created!')
 
+    clearAllCache()
+
     res.send(benefit);
 })
 
 router.delete('/:id', (req, res)=>{
     Benefit.findByIdAndRemove(req.params.id).then(benefit =>{
-        if(benefit) {
+        if (benefit) {
+            clearAllCache()
             return res.status(200).json({success: true, message: 'the benefit is deleted!'})
         } else {
             return res.status(404).json({success: false , message: "benefit not found!"})

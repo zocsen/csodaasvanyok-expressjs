@@ -3,6 +3,7 @@ const { Benefit } = require('../models/benefit');
 const express = require('express');
 const router = express.Router();
 const ObjectId = require('mongodb').ObjectId;
+const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
 
 router.get(`/`, cacheMiddleware(86400), async (req, res) => {
     let filter = {};
@@ -43,6 +44,8 @@ router.post('/', async (req, res) => {
     if(!mineral)
     return res.status(400).send('the mineral cannot be created!')
 
+    clearAllCache()
+
     res.send(mineral);
 })
 
@@ -67,12 +70,15 @@ router.put('/:id', async (req, res) => {
     if(!mineral)
     return res.status(400).send('the mineral cannot be created!')
 
+    clearAllCache()
+
     res.send(mineral);
 })
 
 router.delete('/:id', (req, res)=>{
     Mineral.findByIdAndRemove(req.params.id).then(mineral =>{
-        if(mineral) {
+        if (mineral) {
+            clearAllCache()
             return res.status(200).json({success: true, message: 'the mineral is deleted!'})
         } else {
             return res.status(404).json({success: false , message: "mineral not found!"})

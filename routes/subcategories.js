@@ -1,6 +1,7 @@
 const {Subcategory} = require('../models/subcategory');
 const express = require('express');
 const router = express.Router();
+const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
 
 router.get(`/`, cacheMiddleware(86400), async (req, res) =>{
     const subcategoryList = await Subcategory.find();
@@ -32,6 +33,8 @@ router.post('/', async (req,res)=>{
     if(!subcategory)
     return res.status(400).send('the subcategory cannot be created!')
 
+    clearAllCache()
+
     res.send(subcategory);
 })
 
@@ -49,12 +52,15 @@ router.put('/:id',async (req, res)=> {
     if(!subcategory)
     return res.status(400).send('the subcategory cannot be created!')
 
+    clearAllCache()
+
     res.send(subcategory);
 })
 
-router.delete('/:id', (req, res)=>{
+router.delete('/:id', (req, res) => {
     Subcategory.findByIdAndRemove(req.params.id).then(subcategory =>{
-        if(subcategory) {
+        if (subcategory) {
+            clearAllCache()
             return res.status(200).json({success: true, message: 'the subcategory is deleted!'})
         } else {
             return res.status(404).json({success: false , message: "subcategory not found!"})
