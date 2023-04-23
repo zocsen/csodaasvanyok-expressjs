@@ -1,3 +1,5 @@
+const cache = require('memory-cache');
+
 function cacheMiddleware(duration) {
   return (req, res, next) => {
     const key = '__cache__' + req.originalUrl || req.url;
