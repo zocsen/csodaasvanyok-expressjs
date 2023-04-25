@@ -5,7 +5,7 @@ const router = express.Router();
 const ObjectId = require('mongodb').ObjectId;
 const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
 
-router.get(`/`, cacheMiddleware(86400), async (req, res) => {
+router.get(`/`, cacheMiddleware(2592000), async (req, res) => {
     let filter = {};
     if (req.query.benefits) {
         filter = { benefit: req.query.benefits.split(',') };
@@ -19,7 +19,7 @@ router.get(`/`, cacheMiddleware(86400), async (req, res) => {
     res.status(200).send(mineralList);
 })
 
-router.get('/:id', cacheMiddleware(86400), async(req,res)=>{
+router.get('/:id', cacheMiddleware(2592000), async(req,res)=>{
     const mineral = await Mineral.findById(req.params.id).populate('benefit');
 
     if(!mineral) {

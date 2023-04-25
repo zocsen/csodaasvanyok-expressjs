@@ -20,7 +20,7 @@ const storage = multer.memoryStorage();
 const uploadOptions = multer({ storage: storage });
 
 
-router.get(`/`, cacheMiddleware(86400), async (req, res) => {
+router.get(`/`, cacheMiddleware(2592000), async (req, res) => {
     let filter = {};
     if (req.query.categories) {
         filter = { category: req.query.categories.split(',') };
@@ -54,7 +54,7 @@ router.get(`/`, cacheMiddleware(86400), async (req, res) => {
     res.send(productList);
 });
 
-router.get(`/:id`, cacheMiddleware(86400), async (req, res) => {
+router.get(`/:id`, cacheMiddleware(2592000), async (req, res) => {
     const product = await Product.findById(req.params.id).populate('category').populate('mineral').populate('subcategory').populate('color');
 
     if (!product) {

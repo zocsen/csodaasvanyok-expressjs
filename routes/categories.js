@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
 
-router.get(`/`, cacheMiddleware(86400), async (req, res) =>{
+router.get(`/`, cacheMiddleware(2592000), async (req, res) =>{
     const categoryList = await Category.find();
 
     if(!categoryList) {
@@ -12,7 +12,7 @@ router.get(`/`, cacheMiddleware(86400), async (req, res) =>{
     res.status(200).send(categoryList);
 })
 
-router.get('/:id', cacheMiddleware(86400), async(req,res)=>{
+router.get('/:id', cacheMiddleware(2592000), async(req,res)=>{
     const category = await Category.findById(req.params.id);
 
     if(!category) {
