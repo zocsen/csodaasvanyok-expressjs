@@ -102,7 +102,7 @@ router.post('/create-checkout-session', async (req, res) => {
           currency: 'huf',
           product_data: {
             name: product.name,
-            images: [product.image], 
+            images: [encodeURIComponent(product.image)]
           },
           unit_amount: price * 100,
         },
