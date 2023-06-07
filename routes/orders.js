@@ -4,8 +4,8 @@ const { OrderItem } = require("../models/order-item");
 const { Product } = require("../models/product");
 const router = express.Router();
 
-const stripePublicKey = process.env.STRIPE_PUBLIC_KEY;
-const stripe = require("stripe")(stripePublicKey);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = require("stripe")(stripeSecretKey);
 
 router.get(`/`, async (req, res) => {
   const orderList = await Order.find()
@@ -99,11 +99,12 @@ router.post('/create-checkout-session', async (req, res) => {
 
       const lineItem = {
         price_data: {
-          currency: 'usd',
+          currency: 'huf',
           product_data: {
             name: product.name,
+            image: product.image,
           },
-          unit_amount: price * 100,
+          unit_amount: price,
         },
         quantity: orderItem.quantity,
       };
@@ -116,6 +117,7 @@ router.post('/create-checkout-session', async (req, res) => {
     mode: 'payment',
     success_url: 'https://www.csodaasvanyok.hu/success',
     cancel_url: 'https://www.csodaasvanyok.hu/cancel',
+    locale: 'hu',
   });
   res.json({ id: session.id });
 });
