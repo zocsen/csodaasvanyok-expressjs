@@ -41,6 +41,7 @@ router.post("/", async (req, res) => {
       let newOrderItem = new OrderItem({
         quantity: orderitem.quantity,
         product: orderitem.product,
+        size: orderitem.size,
       });
 
       newOrderItem = await newOrderItem.save();
