@@ -10,9 +10,6 @@ const orderSchema = mongoose.Schema({
         type: String,
         required: true,
     },
-    shippingAddress2: {
-        type: String,
-    },
     city: {
         type: String,
         required: true,
@@ -36,6 +33,9 @@ const orderSchema = mongoose.Schema({
     },
     totalPrice: {
         type: Number,
+    },
+    name: {
+        type: String,
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
