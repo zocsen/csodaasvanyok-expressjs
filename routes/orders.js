@@ -77,6 +77,7 @@ router.post('/create-checkout-session', async (req, res) => {
 
     const lineItems = await Promise.all(
         orderItems.map(async (orderItem) => {
+            //TODO Change this to be compatibke with the id instead of the product
             const product = await Product.findById(orderItem.productId);
             const price = product.price;
 
