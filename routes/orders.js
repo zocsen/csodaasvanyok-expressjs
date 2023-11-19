@@ -34,7 +34,6 @@ router.get(`/:id`, async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-    console.log(req.body);
     const orderItemsIds = Promise.all(
         req.body.orderItems.map(async (orderitem) => {
             let newOrderItem = new OrderItem({
@@ -77,16 +76,14 @@ router.post('/create-checkout-session', async (req, res) => {
 
     const lineItems = await Promise.all(
         orderItems.map(async (orderItem) => {
-            //TODO Change this to be compatibke with the id instead of the product
-            const product = await Product.findById(orderItem.productId);
-            const price = product.price;
-
+            const product = await Product.findById(orderItem.id);
+            const price = orderItem.price;
             const lineItem = {
                 price_data: {
                     currency: 'huf',
                     product_data: {
                         name: product.name,
-                        images: [encodeURIComponent(product.image)]
+                        images: [product.image]
                     },
                     unit_amount: price * 100
                 },

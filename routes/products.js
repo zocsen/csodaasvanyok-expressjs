@@ -19,7 +19,6 @@ const s3 = new AWS.S3({
 const storage = multer.memoryStorage();
 const uploadOptions = multer({ storage: storage });
 
-
 router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
     let filter = {};
     if (req.query.categories) {
@@ -35,9 +34,12 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
         filter = { color: req.query.colors.split(',') };
     }
 
-
     //
-    const productList = await Product.find(filter).populate('category').populate('mineral').populate('subcategory').populate('color');
+    const productList = await Product.find(filter)
+        .populate('category')
+        .populate('mineral')
+        .populate('subcategory')
+        .populate('color');
 
     if (!productList) {
         res.status(500).json({ success: false });
@@ -55,7 +57,11 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
 });
 
 router.get(`/:id`, cacheMiddleware(2000000), async (req, res) => {
-    const product = await Product.findById(req.params.id).populate('category').populate('mineral').populate('subcategory').populate('color');
+    const product = await Product.findById(req.params.id)
+        .populate('category')
+        .populate('mineral')
+        .populate('subcategory')
+        .populate('color');
 
     if (!product) {
         res.status(500).json({ success: false });
@@ -71,7 +77,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
         return res.status(400).send('Invalid Category');
     }
     // TODO DO the above for mineral and subcategory without breaking the program due ID Array!!
-    
+
     // Retrieve the uploaded file from the request
     const file = req.file;
     if (!file) {
@@ -90,7 +96,8 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
     const params = {
         Bucket: process.env.AWS_BUCKET_NAME,
         Key: `${fileName}`,
-        Body: resizedImageBuffer
+        Body: resizedImageBuffer,
+        ContentType: 'image/jpeg'
     };
 
     // Upload the file to S3
@@ -105,12 +112,12 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
         // Create a new product object with the uploaded image URL
 
         const mineralString = req.body.mineral;
-        const mineralArray = mineralString.split(",").map(id => new ObjectId(id));
+        const mineralArray = mineralString.split(',').map((id) => new ObjectId(id));
         const subcategoryString = req.body.subcategory;
-        const subcategoryArray = subcategoryString.split(",").map(id => new ObjectId(id));
+        const subcategoryArray = subcategoryString.split(',').map((id) => new ObjectId(id));
         const colorString = req.body.color;
-        const colorArray = colorString.split(",").map(id => new ObjectId(id));
-        
+        const colorArray = colorString.split(',').map((id) => new ObjectId(id));
+
         let product = new Product({
             name: req.body.name,
             description: req.body.description,
@@ -119,18 +126,18 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
             category: req.body.category,
             mineral: mineralArray,
             subcategory: subcategoryArray,
-            color: colorArray,
+            color: colorArray
             //isFeatured: req.body.isFeatured
         });
 
         // Save the product to the database
         product = await product.save();
-        
+
         if (!product) {
             return res.status(500).send('The product cannot be created');
         }
 
-        clearAllCache()
+        clearAllCache();
 
         // Send the product object as the response to the client
         res.send(product);
@@ -138,7 +145,6 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
 });
 
 router.put('/:id', uploadOptions.single('image'), async (req, res) => {
-    console.log("itt még jó 2");
     if (!mongoose.isValidObjectId(req.params.id)) {
         return res.status(400).send('Invalid Product Id');
     }
@@ -150,19 +156,19 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     if (!product) return res.status(400).send('Invalid Product!');
 
     const file = req.file;
-    
+
     let imagepath;
 
     if (file) {
         const resizedImageBuffer = await sharp(file.buffer)
-        .resize({ width: 800, height: 800, fit: 'inside' })
-        .withMetadata()
-        .toBuffer()
+            .resize({ width: 800, height: 800, fit: 'inside' })
+            .withMetadata()
+            .toBuffer();
 
         const params = {
             Bucket: process.env.AWS_BUCKET_NAME,
             Key: `${Date.now()}_${file.originalname}`,
-            Body: resizedImageBuffer,
+            Body: resizedImageBuffer
         };
         const data = await s3.upload(params).promise();
         imagepath = data.Location;
@@ -170,12 +176,12 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
         imagepath = product.image;
     }
 
-    const mineralString = req.body.mineral
-    const mineralArray = mineralString.split(",").map(id => new ObjectId(id));
+    const mineralString = req.body.mineral;
+    const mineralArray = mineralString.split(',').map((id) => new ObjectId(id));
     const subcategoryString = req.body.subcategory;
-    const subcategoryArray = subcategoryString.split(",").map(id => new ObjectId(id));
+    const subcategoryArray = subcategoryString.split(',').map((id) => new ObjectId(id));
     const colorString = req.body.color;
-    const colorArray = colorString.split(",").map(id => new ObjectId(id));
+    const colorArray = colorString.split(',').map((id) => new ObjectId(id));
 
     const updatedProduct = await Product.findByIdAndUpdate(
         req.params.id,
@@ -187,15 +193,15 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             category: req.body.category,
             mineral: mineralArray,
             subcategory: subcategoryArray,
-            color: colorArray,
+            color: colorArray
             //isFeatured: req.body.isFeatured
         },
         { new: true }
     );
 
     if (!updatedProduct) return res.status(500).send('the product cannot be updated!');
-    
-    clearAllCache()
+
+    clearAllCache();
 
     res.send(updatedProduct);
 });
@@ -204,7 +210,7 @@ router.delete('/:id', (req, res) => {
     Product.findByIdAndRemove(req.params.id)
         .then((product) => {
             if (product) {
-                clearAllCache()
+                clearAllCache();
                 return res.status(200).json({
                     success: true,
                     message: 'the product is deleted!'
