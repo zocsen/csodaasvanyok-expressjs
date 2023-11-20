@@ -45,6 +45,10 @@ const orderSchema = mongoose.Schema({
     dateOrdered: {
         type: Date,
         default: Date.now
+    },
+    email: {
+        type: String,
+        required: true
     }
 });
 

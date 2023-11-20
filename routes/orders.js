@@ -60,7 +60,8 @@ router.post('/', async (req, res) => {
         status: req.body.status,
         totalPrice: req.body.totalPrice,
         name: req.body.name,
-        user: req.body.user
+        user: req.body.user,
+        email: req.body.email
     });
     order = await order.save();
 
@@ -172,6 +173,26 @@ router.get(`/get/userorders/:userid`, async (req, res) => {
         res.status(500).json({ success: false });
     }
     res.send(userOrderList);
+});
+
+router.get(`/:id`, async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id).populate({
+            path: 'orderItems',
+            populate: {
+                path: 'product',
+                model: 'Product'
+            }
+        });
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        res.json(order);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 module.exports = router;
