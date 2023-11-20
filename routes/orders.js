@@ -140,7 +140,7 @@ router.get('/get/totalsales', async (req, res) => {
         { $group: { _id: null, totalsales: { $sum: '$totalPrice' } } }
     ]);
 
-    if (!totalSales) {
+    if (!totalSales || totalSales.length === 0) {
         return res.status(400).send('The order sales cannot be generated');
     }
 
