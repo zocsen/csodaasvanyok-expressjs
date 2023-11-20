@@ -11,7 +11,7 @@ const { verifyToken } = require('./authMiddleware');
 //remove these once stable
 app.use(
     cors({
-        origin: ['https://www.csodaasvanyok.hu', process.env.LOCALHOST, 'http://192.168.1.8:3100'],
+        origin: ['https://www.csodaasvanyok.hu', process.env.LOCALHOST, process.env.ADMINPAGE],
         optionsSuccessStatus: 200
         //credentials: true
     })
