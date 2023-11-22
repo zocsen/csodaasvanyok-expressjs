@@ -7,6 +7,9 @@ const router = express.Router();
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = require('stripe')(stripeSecretKey);
 
+const deliveryTruckPNGPath =
+    'https://csodaasvanyok-bucket.s3.eu-central-1.amazonaws.com/delivery-truck.png';
+
 router.get(`/`, async (req, res) => {
     const orderList = await Order.find().populate('user', 'name').sort({ dateOrdered: -1 });
 
@@ -72,6 +75,8 @@ router.post('/', async (req, res) => {
 
 router.post('/create-checkout-session', async (req, res) => {
     const orderItems = req.body.items;
+    const deliveryFee = req.body.deliveryFee;
+    const userEmail = req.body.email;
 
     if (!orderItems) return res.status(400).send('No order items');
 
@@ -83,7 +88,7 @@ router.post('/create-checkout-session', async (req, res) => {
                 price_data: {
                     currency: 'huf',
                     product_data: {
-                        name: product.name,
+                        name: `${product.name} (${orderItem.size})`,
                         images: [product.image]
                     },
                     unit_amount: price * 100
@@ -93,8 +98,36 @@ router.post('/create-checkout-session', async (req, res) => {
             return lineItem;
         })
     );
+
+    if (deliveryFee > 0) {
+        lineItems.push({
+            price_data: {
+                currency: 'huf',
+                product_data: {
+                    name: 'Szállítási díj',
+                    images: [deliveryTruckPNGPath]
+                },
+                unit_amount: deliveryFee * 100
+            },
+            quantity: 1
+        });
+    } else {
+        lineItems.push({
+            price_data: {
+                currency: 'huf',
+                product_data: {
+                    name: 'Szállítási díj',
+                    images: [deliveryTruckPNGPath]
+                },
+                unit_amount: 0
+            },
+            quantity: 1
+        });
+    }
+
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
+        customer_email: userEmail,
         line_items: lineItems,
         mode: 'payment',
         success_url: 'https://www.csodaasvanyok.hu/success',
