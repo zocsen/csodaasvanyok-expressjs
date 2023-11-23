@@ -37,40 +37,52 @@ router.get(`/:id`, async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-    const orderItemsIds = Promise.all(
-        req.body.orderItems.map(async (orderitem) => {
-            let newOrderItem = new OrderItem({
-                product: orderitem.id,
-                quantity: orderitem.quantity,
-                size: orderitem.size
-            });
+    const sessionId = req.body.sessionId;
+    try {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-            newOrderItem = await newOrderItem.save();
+        if (session.payment_status !== 'paid') {
+            return res.status(400).send('Payment not successful');
+        }
+        const orderItemsIds = Promise.all(
+            req.body.orderItems.map(async (orderitem) => {
+                let newOrderItem = new OrderItem({
+                    product: orderitem.id,
+                    quantity: orderitem.quantity,
+                    size: orderitem.size
+                });
 
-            return newOrderItem._id;
-        })
-    );
+                newOrderItem = await newOrderItem.save();
 
-    const orderItemsIdsResolved = await orderItemsIds;
+                return newOrderItem._id;
+            })
+        );
 
-    let order = new Order({
-        orderItems: orderItemsIdsResolved,
-        shippingAddress1: req.body.shippingAddress1,
-        city: req.body.city,
-        zip: req.body.zip,
-        country: req.body.country,
-        phone: req.body.phone,
-        status: req.body.status,
-        totalPrice: req.body.totalPrice,
-        name: req.body.name,
-        user: req.body.user,
-        email: req.body.email
-    });
-    order = await order.save();
+        const orderItemsIdsResolved = await orderItemsIds;
 
-    if (!order) return res.status(400).send('the order cannot be created!');
+        let order = new Order({
+            orderItems: orderItemsIdsResolved,
+            shippingAddress1: req.body.shippingAddress1,
+            city: req.body.city,
+            zip: req.body.zip,
+            country: req.body.country,
+            phone: req.body.phone,
+            status: req.body.status,
+            totalPrice: req.body.totalPrice,
+            name: req.body.name,
+            user: req.body.user,
+            email: req.body.email
+        });
+        order = await order.save();
 
-    res.status(200).send(order);
+        if (!order) {
+            throw new Error('Order creation failed');
+        }
+
+        res.status(200).json(order);
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
 });
 
 router.post('/create-checkout-session', async (req, res) => {
@@ -130,7 +142,7 @@ router.post('/create-checkout-session', async (req, res) => {
         customer_email: userEmail,
         line_items: lineItems,
         mode: 'payment',
-        success_url: 'https://www.csodaasvanyok.hu/success',
+        success_url: 'https://www.csodaasvanyok.hu/success?session_id={CHECKOUT_SESSION_ID}',
         cancel_url: 'https://www.csodaasvanyok.hu/cancel',
         locale: 'hu'
     });
