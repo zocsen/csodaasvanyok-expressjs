@@ -36,16 +36,10 @@ router.get(`/:id`, async (req, res) => {
     res.send(order);
 });
 
-router.post('/', async (req, res) => {
-    const sessionId = req.body.sessionId;
+router.post('/temp-order', async (req, res) => {
     try {
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-        if (session.payment_status !== 'paid') {
-            return res.status(400).send('Payment not successful');
-        }
         const orderItemsIds = Promise.all(
-            req.body.orderItems.map(async (orderitem) => {
+            req.body.deliveryInfo.orderItems.map(async (orderitem) => {
                 let newOrderItem = new OrderItem({
                     product: orderitem.id,
                     quantity: orderitem.quantity,
@@ -53,31 +47,55 @@ router.post('/', async (req, res) => {
                 });
 
                 newOrderItem = await newOrderItem.save();
-
                 return newOrderItem._id;
             })
         );
 
         const orderItemsIdsResolved = await orderItemsIds;
 
-        let order = new Order({
+        let tempOrder = new Order({
             orderItems: orderItemsIdsResolved,
-            shippingAddress1: req.body.shippingAddress1,
-            city: req.body.city,
-            zip: req.body.zip,
-            country: req.body.country,
-            phone: req.body.phone,
-            status: req.body.status,
-            totalPrice: req.body.totalPrice,
-            name: req.body.name,
-            user: req.body.user,
-            email: req.body.email
+            shippingAddress1: req.body.deliveryInfo.shippingAddress1,
+            city: req.body.deliveryInfo.city,
+            zip: req.body.deliveryInfo.zip,
+            country: req.body.deliveryInfo.country,
+            phone: req.body.deliveryInfo.phone,
+            status: req.body.deliveryInfo.status,
+            totalPrice: req.body.deliveryInfo.totalPrice,
+            name: req.body.deliveryInfo.name,
+            user: req.body.deliveryInfo.user,
+            email: req.body.deliveryInfo.email
         });
-        order = await order.save();
+
+        tempOrder = await tempOrder.save();
+
+        if (!tempOrder) {
+            throw new Error('Temporary order creation failed');
+        }
+
+        res.status(200).json({ tempOrderId: tempOrder._id });
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+router.post('/', async (req, res) => {
+    const sessionId = req.body.sessionId;
+    const tempOrderId = req.body.tempOrderId;
+    try {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+        if (session.payment_status !== 'paid') {
+            return res.status(400).send('Payment not successful');
+        }
+
+        let order = await Order.findById(tempOrderId);
 
         if (!order) {
-            throw new Error('Order creation failed');
+            throw new Error('Temporary order not found');
         }
+
+        order = await order.save();
 
         res.status(200).json(order);
     } catch (error) {
@@ -142,7 +160,7 @@ router.post('/create-checkout-session', async (req, res) => {
         customer_email: userEmail,
         line_items: lineItems,
         mode: 'payment',
-        success_url: 'https://www.csodaasvanyok.hu/success?session_id={CHECKOUT_SESSION_ID}',
+        success_url: 'http://localhost:3100/success?session_id={CHECKOUT_SESSION_ID}',
         cancel_url: 'https://www.csodaasvanyok.hu/cancel',
         locale: 'hu'
     });
