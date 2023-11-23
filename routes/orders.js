@@ -82,7 +82,6 @@ router.post('/temp-order', async (req, res) => {
 router.post('/', async (req, res) => {
     const sessionId = req.body.sessionId;
     const tempOrderId = req.body.tempOrderId;
-    console.log(tempOrderId);
     try {
         const session = await stripe.checkout.sessions.retrieve(sessionId);
 
@@ -97,7 +96,6 @@ router.post('/', async (req, res) => {
         }
 
         order.status = 1;
-        console.log(order);
 
         order = await order.save();
 
@@ -164,7 +162,7 @@ router.post('/create-checkout-session', async (req, res) => {
         customer_email: userEmail,
         line_items: lineItems,
         mode: 'payment',
-        success_url: 'http://localhost:3100/success?session_id={CHECKOUT_SESSION_ID}',
+        success_url: 'http://www.csodaasvanyok.hu/success?session_id={CHECKOUT_SESSION_ID}',
         cancel_url: 'https://www.csodaasvanyok.hu/cancel',
         locale: 'hu'
     });
