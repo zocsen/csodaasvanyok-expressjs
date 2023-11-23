@@ -82,6 +82,7 @@ router.post('/temp-order', async (req, res) => {
 router.post('/', async (req, res) => {
     const sessionId = req.body.sessionId;
     const tempOrderId = req.body.tempOrderId;
+    console.log(tempOrderId);
     try {
         const session = await stripe.checkout.sessions.retrieve(sessionId);
 
@@ -96,6 +97,7 @@ router.post('/', async (req, res) => {
         }
 
         order.status = 1;
+        console.log(order);
 
         order = await order.save();
 
