@@ -95,6 +95,8 @@ router.post('/', async (req, res) => {
             throw new Error('Temporary order not found');
         }
 
+        order.status = 1;
+
         order = await order.save();
 
         res.status(200).json(order);
