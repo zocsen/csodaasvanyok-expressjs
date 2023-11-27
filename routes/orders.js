@@ -163,7 +163,7 @@ router.post('/create-checkout-session', async (req, res) => {
         customer_email: userEmail,
         line_items: lineItems,
         mode: 'payment',
-        success_url: 'http://localhost:3100/success?session_id={CHECKOUT_SESSION_ID}',
+        success_url: 'https://www.csodaasvanyok.hu/success?session_id={CHECKOUT_SESSION_ID}',
         cancel_url: 'https://www.csodaasvanyok.hu/cancel',
         locale: 'hu'
     });
