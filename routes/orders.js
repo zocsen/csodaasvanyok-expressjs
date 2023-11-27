@@ -64,7 +64,8 @@ router.post('/temp-order', async (req, res) => {
             totalPrice: req.body.deliveryInfo.totalPrice,
             name: req.body.deliveryInfo.name,
             user: req.body.deliveryInfo.user,
-            email: req.body.deliveryInfo.email
+            email: req.body.deliveryInfo.email,
+            deliveryMethod: req.body.deliveryInfo.deliveryMethod
         });
 
         tempOrder = await tempOrder.save();
@@ -162,7 +163,7 @@ router.post('/create-checkout-session', async (req, res) => {
         customer_email: userEmail,
         line_items: lineItems,
         mode: 'payment',
-        success_url: 'http://www.csodaasvanyok.hu/success?session_id={CHECKOUT_SESSION_ID}',
+        success_url: 'http://localhost:3100/success?session_id={CHECKOUT_SESSION_ID}',
         cancel_url: 'https://www.csodaasvanyok.hu/cancel',
         locale: 'hu'
     });

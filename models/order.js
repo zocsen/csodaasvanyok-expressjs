@@ -49,6 +49,9 @@ const orderSchema = mongoose.Schema({
     email: {
         type: String,
         required: true
+    },
+    deliveryMethod: {
+        type: String
     }
 });
 
