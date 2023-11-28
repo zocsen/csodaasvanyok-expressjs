@@ -9,8 +9,7 @@ const stripe = require('stripe')(stripeSecretKey);
 
 const nodemailer = require('nodemailer');
 
-async function sendOrderConfirmationEmail(userEmail, orderDetails) {
-    console.log(process.env.EMAIL_PASSWORD);
+async function sendOrderConfirmationEmail(userEmail) {
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -22,10 +21,15 @@ async function sendOrderConfirmationEmail(userEmail, orderDetails) {
     let mailOptions = {
         from: 'csodaasvanyok@gmail.com',
         to: userEmail,
-        subject: 'Order Confirmation',
-        text: `Thank you for your order! Here are your order details: ${JSON.stringify(
-            orderDetails
-        )}`
+        subject: 'Csodaásványok Rendelés Visszaigazolása',
+        text: `Tisztelt Vásárlónk!
+
+Szeretnénk megköszönni, hogy a Csodaásványok webáruházat választotta. Örömmel értesítjük, hogy rendelését sikeresen rögzítettük, és az jelenleg feldolgozás alatt áll. Amennyiben a FoxPost Csomagautomatát választotta kézbesítési módként, rövidesen küldünk Önnek egy következő lépéseket ismertető e-mailt, amely tartalmazza a csomag nyomon követéséhez szükséges információkat és az átvétellel kapcsolatos tudnivalókat.
+
+Köszönjük türelmét és bizalmát, és reméljük, hogy rendelése hamarosan örömet okoz majd Önnek!
+
+Üdvözlettel,
+A Csodaásványok Csapat`
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
@@ -130,7 +134,7 @@ router.post('/', async (req, res) => {
 
         order = await order.save();
 
-        await sendOrderConfirmationEmail(order.email, order);
+        await sendOrderConfirmationEmail(order.email);
         res.status(200).json(order);
     } catch (error) {
         res.status(500).send(error.message);
