@@ -10,6 +10,7 @@ const stripe = require('stripe')(stripeSecretKey);
 const nodemailer = require('nodemailer');
 
 async function sendOrderConfirmationEmail(userEmail, orderDetails) {
+    console.log(process.env.EMAIL_PASSWORD);
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
