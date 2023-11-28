@@ -7,6 +7,35 @@ const router = express.Router();
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = require('stripe')(stripeSecretKey);
 
+const nodemailer = require('nodemailer');
+
+async function sendOrderConfirmationEmail(userEmail, orderDetails) {
+    let transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: 'csodaasvanyok@gmail.com',
+            pass: `${process.env.EMAIL_PASSWORD}`
+        }
+    });
+
+    let mailOptions = {
+        from: 'csodaasvanyok@gmail.com',
+        to: userEmail,
+        subject: 'Order Confirmation',
+        text: `Thank you for your order! Here are your order details: ${JSON.stringify(
+            orderDetails
+        )}`
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+            console.log(error);
+        } else {
+            console.log('Email sent: ' + info.response);
+        }
+    });
+}
+
 const deliveryTruckPNGPath =
     'https://csodaasvanyok-bucket.s3.eu-central-1.amazonaws.com/delivery-truck.png';
 
@@ -100,6 +129,7 @@ router.post('/', async (req, res) => {
 
         order = await order.save();
 
+        await sendOrderConfirmationEmail(order.email, order);
         res.status(200).json(order);
     } catch (error) {
         res.status(500).send(error.message);
