@@ -7,6 +7,7 @@ require('dotenv/config');
 const authJwt = require('./helpers/jwt');
 const errorHandler = require('./helpers/error-handler');
 const { verifyToken } = require('./authMiddleware');
+const compression = require('compression');
 
 //remove these once stable
 app.use(
@@ -23,6 +24,7 @@ app.use(morgan('combined'));
 app.use(authJwt());
 app.use('/public/uploads', express.static(__dirname + '/public/uploads'));
 app.use(errorHandler);
+app.use(compression());
 
 //Routes
 const categoriesRoutes = require('./routes/categories');
