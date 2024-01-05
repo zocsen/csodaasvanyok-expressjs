@@ -20,40 +20,51 @@ const storage = multer.memoryStorage();
 const uploadOptions = multer({ storage: storage });
 
 router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
-    let filter = {};
-    if (req.query.categories) {
-        filter = { category: req.query.categories.split(',') };
-    }
-    if (req.query.minerals) {
-        filter = { mineral: req.query.minerals.split(',') };
-    }
-    if (req.query.subcategories) {
-        filter = { subcategory: req.query.subcategories.split(',') };
-    }
-    if (req.query.colors) {
-        filter = { color: req.query.colors.split(',') };
-    }
+    try {
+        let filter = {};
+        if (req.query.categories) {
+            filter = { category: req.query.categories.split(',') };
+        }
+        if (req.query.minerals) {
+            filter = { mineral: req.query.minerals.split(',') };
+        }
+        if (req.query.subcategory) {
+            const subcategoryName = req.query.subcategory;
+            const subcategory = await Subcategory.findOne({ name: subcategoryName });
 
-    //
-    const productList = await Product.find(filter)
-        .populate('category')
-        .populate('mineral')
-        .populate('subcategory')
-        .populate('color');
+            if (subcategory) {
+                filter.subcategory = subcategory._id;
+            } else {
+                return res.status(404).send('Subcategory not found');
+            }
+        }
+        if (req.query.colors) {
+            filter = { color: req.query.colors.split(',') };
+        }
 
-    if (!productList) {
-        res.status(500).json({ success: false });
+        //
+        const productList = await Product.find(filter)
+            .populate('category')
+            .populate('mineral')
+            .populate('subcategory')
+            .populate('color');
+
+        if (!productList) {
+            res.status(500).json({ success: false });
+        }
+
+        // Replace the image URL with S3 URL
+        if (productList.image && productList.image.startsWith('https://')) {
+            productList.image = s3.getSignedUrl('getObject', {
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: productList.image.split(process.env.AWS_BUCKET_NAME + '/')[1]
+            });
+        }
+
+        res.send(productList);
+    } catch (error) {
+        res.status(500).send(error.message);
     }
-
-    // Replace the image URL with S3 URL
-    if (productList.image && productList.image.startsWith('https://')) {
-        productList.image = s3.getSignedUrl('getObject', {
-            Bucket: process.env.AWS_BUCKET_NAME,
-            Key: productList.image.split(process.env.AWS_BUCKET_NAME + '/')[1]
-        });
-    }
-
-    res.send(productList);
 });
 
 router.get(`/:id`, cacheMiddleware(2000000), async (req, res) => {
