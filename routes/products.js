@@ -102,6 +102,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
     const resizedImageBuffer = await sharp(file.buffer)
         .resize({ width: 800, height: 800, fit: 'inside' })
         .withMetadata()
+        .webp()
         .toBuffer();
 
     // Set up the S3 upload parameters
@@ -109,7 +110,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
         Bucket: process.env.AWS_BUCKET_NAME,
         Key: `${fileName}`,
         Body: resizedImageBuffer,
-        ContentType: 'image/jpeg'
+        ContentType: 'image/webp'
     };
 
     // Upload the file to S3
