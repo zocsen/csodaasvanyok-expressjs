@@ -18,7 +18,7 @@ async function sendOrderConfirmationEmail(userEmail) {
         }
     });
 
-    let mailOptions = {
+    let customerMailOptions = {
         from: 'csodaasvanyok@gmail.com',
         to: userEmail,
         subject: 'Csodaásványok Rendelés Visszaigazolása',
@@ -32,11 +32,26 @@ Köszönjük türelmét és bizalmát, és reméljük, hogy rendelése hamarosan
 A Csodaásványok Csapat`
     };
 
-    transporter.sendMail(mailOptions, function (error, info) {
+    let notificationMailOptions = {
+        from: 'csodaasvanyok@gmail.com',
+        to: 'csodaasvanyok@gmail.com',
+        subject: 'Csodaásványok. Új rendelés!',
+        text: `A következő felhasználó egy új megrendelést tett közzé: ${userEmail}`
+    };
+
+    transporter.sendMail(customerMailOptions, function (error, info) {
         if (error) {
             console.log(error);
         } else {
             console.log('Email sent: ' + info.response);
+        }
+    });
+
+    transporter.sendMail(notificationMailOptions, function (error, info) {
+        if (error) {
+            console.log(error);
+        } else {
+            console.log('Notification Email sent: ' + info.response);
         }
     });
 }
