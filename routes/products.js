@@ -3,6 +3,7 @@ const { Product } = require('../models/product');
 const { Category } = require('../models/category');
 const { Subcategory } = require('../models/subcategory');
 const router = express.Router();
+const path = require('path');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const AWS = require('aws-sdk');
