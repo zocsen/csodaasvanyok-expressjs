@@ -206,7 +206,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             ContentType: 'image/webp'
         };
         const data = await s3.upload(params).promise();
-        imagepath = encodeURI(data.Location);
+        imagepath = encodeURI(decodeURI(data.Location));
     } else {
         imagepath = product.image;
     }
