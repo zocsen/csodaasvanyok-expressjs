@@ -179,7 +179,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     if (file) {
         if (product.image) {
             const oldImageKey = product.image.split('/').pop();
-            const deleteImage = {
+            const deleteParams = {
                 Bucket: process.env.AWS_BUCKET_NAME,
                 Key: oldImageKey
             };
