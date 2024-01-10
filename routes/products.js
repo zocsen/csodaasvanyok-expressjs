@@ -178,10 +178,11 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
 
     if (file) {
         if (product.image) {
-            const oldImageKey = product.image.split('/').pop();
+            const url = new URL(product.image);
+            const key = decodeURIComponent(url.pathname.substring(1));
             const deleteParams = {
                 Bucket: process.env.AWS_BUCKET_NAME,
-                Key: oldImageKey
+                Key: key
             };
             try {
                 await s3.deleteObject(deleteParams).promise();
