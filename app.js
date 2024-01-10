@@ -56,6 +56,7 @@ mongoose
     .connect(process.env.CONNECTION_STRING, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
+        useFindAndModify: false,
         dbName: process.env.DB_NAME
     })
     .then(() => {

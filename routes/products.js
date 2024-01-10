@@ -255,9 +255,25 @@ router.delete('/:id', (req, res) => {
     }
 
     Product.findByIdAndRemove(productId)
-        .then((product) => {
+        .then(async (product) => {
             if (product) {
+                const url = new URL(product.image);
+                const key = decodeURIComponent(url.pathname.substring(1));
+                const deleteParams = {
+                    Bucket: process.env.AWS_BUCKET_NAME,
+                    Key: key
+                };
+
+                if (product.image) {
+                    try {
+                        await s3.deleteObject(deleteParams).promise();
+                    } catch (err) {
+                        return res.status(500).send('Error deleting image');
+                    }
+                }
+
                 clearAllCache();
+
                 return res.status(200).json({
                     success: true,
                     message: 'the product is deleted!'
