@@ -248,7 +248,13 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
 });
 
 router.delete('/:id', (req, res) => {
-    Product.findByIdAndRemove(req.params.id)
+    const productId = req.params.id;
+
+    if (!mongoose.isValidObjectId(productId)) {
+        return res.status(400).send('Invalid Product ID');
+    }
+
+    Product.findByIdAndRemove(productId)
         .then((product) => {
             if (product) {
                 clearAllCache();
@@ -261,7 +267,8 @@ router.delete('/:id', (req, res) => {
             }
         })
         .catch((err) => {
-            return res.status(500).json({ success: false, error: err });
+            console.error('Error during product deletion:', err);
+            return res.status(500).json({ success: false, error: err.message });
         });
 });
 
