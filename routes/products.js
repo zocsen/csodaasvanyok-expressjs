@@ -101,7 +101,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
     const fileName = `${path.parse(file.originalname).name}.webp`;
 
     const resizedImageBuffer = await sharp(file.buffer)
-        .resize({ width: 800, height: 800, fit: 'inside' })
+        .resize({ width: 600, height: 600, fit: 'inside' })
         .withMetadata()
         .webp()
         .toBuffer();
