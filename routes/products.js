@@ -177,15 +177,33 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     let imagepath;
 
     if (file) {
+        if (product.image) {
+            const oldImageKey = product.image.split('/').pop();
+            const deleteImage = {
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: oldImageKey
+            };
+
+            try {
+                await s3.deleteObject(deleteParams).promise();
+            } catch (err) {
+                return res.status(500).send('Error deleting old image');
+            }
+        }
+
+        const newFileName = `${Date.now()}_${file.originalname.split('.')[0]}.webp`;
+
         const resizedImageBuffer = await sharp(file.buffer)
-            .resize({ width: 800, height: 800, fit: 'inside' })
+            .resize({ width: 600, height: 600, fit: 'inside' })
             .withMetadata()
+            .webp()
             .toBuffer();
 
         const params = {
             Bucket: process.env.AWS_BUCKET_NAME,
-            Key: `${Date.now()}_${file.originalname}`,
-            Body: resizedImageBuffer
+            Key: newFileName,
+            Body: resizedImageBuffer,
+            ContentType: 'image/webp'
         };
         const data = await s3.upload(params).promise();
         imagepath = data.Location;
