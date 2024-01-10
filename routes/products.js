@@ -97,7 +97,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
     }
 
     // Create a unique filename for the image to be stored in S3
-    const fileName = file.originalname;
+    const fileName = `${path.parse(file.originalname).name}.webp`;
 
     const resizedImageBuffer = await sharp(file.buffer)
         .resize({ width: 800, height: 800, fit: 'inside' })
