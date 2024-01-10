@@ -174,7 +174,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
 
     const file = req.file;
 
-    let imagepath;
+    let imagePath = product.image;
 
     if (file) {
         if (product.image) {
@@ -183,7 +183,6 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
                 Bucket: process.env.AWS_BUCKET_NAME,
                 Key: oldImageKey
             };
-
             try {
                 await s3.deleteObject(deleteParams).promise();
             } catch (err) {
@@ -191,7 +190,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             }
         }
 
-        const newFileName = `${Date.now()}_${file.originalname.split('.')[0]}.webp`;
+        const newFileName = `${path.parse(file.originalname).name}.webp`;
 
         const resizedImageBuffer = await sharp(file.buffer)
             .resize({ width: 600, height: 600, fit: 'inside' })
@@ -205,10 +204,16 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             Body: resizedImageBuffer,
             ContentType: 'image/webp'
         };
-        const data = await s3.upload(params).promise();
-        imagepath = encodeURI(decodeURI(data.Location));
-    } else {
-        imagepath = product.image;
+
+        try {
+            await s3.upload(params).promise();
+
+            // Construct the base URL for the product image
+            const basePath = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`;
+            imagePath = encodeURI(`${basePath}${newFileName}`);
+        } catch (err) {
+            return res.status(500).send('Error uploading new image');
+        }
     }
 
     const mineralString = req.body.mineral;
@@ -223,7 +228,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
         {
             name: req.body.name,
             description: req.body.description,
-            image: imagepath,
+            image: imagePath,
             price: req.body.price,
             category: req.body.category,
             mineral: mineralArray,
