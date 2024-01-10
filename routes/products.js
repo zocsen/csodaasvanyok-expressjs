@@ -131,10 +131,13 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
         const colorString = req.body.color;
         const colorArray = colorString.split(',').map((id) => new ObjectId(id));
 
+        let imageUrl = `${basePath}${fileName}`;
+        imageUrl = encodeURIComponent(imageUrl);
+
         let product = new Product({
             name: req.body.name,
             description: req.body.description,
-            image: `${basePath}${fileName}`,
+            image: imageUrl,
             price: req.body.price,
             category: req.body.category,
             mineral: mineralArray,
