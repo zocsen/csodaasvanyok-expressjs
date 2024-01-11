@@ -9,7 +9,7 @@ const stripe = require('stripe')(stripeSecretKey);
 
 const nodemailer = require('nodemailer');
 
-async function sendOrderConfirmationEmail(userEmail) {
+async function sendOrderConfirmationEmail(userEmail, orderItems) {
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -32,11 +32,25 @@ Köszönjük türelmét és bizalmát, és reméljük, hogy rendelése hamarosan
 A Csodaásványok Csapat`
     };
 
+    let itemsDescription = orderItems
+        .map(
+            (item) =>
+                `Termék neve: ${item.product.name}, Mennyiség: ${item.quantity}, Méret: ${item.size}`
+        )
+        .join('\n');
+
     let notificationMailOptions = {
         from: 'csodaasvanyok@gmail.com',
         to: 'csodaasvanyok@gmail.com',
         subject: 'Csodaásványok. Új rendelés!',
-        text: `A következő felhasználó egy új megrendelést tett közzé: ${userEmail}`
+        text: `A következő felhasználó terméket vásárolt: ${userEmail}
+
+Vásárolt termékek:
+${itemsDescription}
+
+További részletért:
+https://csodaasvanyok-admin.vercel.app/orders
+`
     };
 
     transporter.sendMail(customerMailOptions, function (error, info) {
@@ -149,7 +163,7 @@ router.post('/', async (req, res) => {
 
         order = await order.save();
 
-        await sendOrderConfirmationEmail(order.email);
+        await sendOrderConfirmationEmail(order.email, order.orderItems);
         res.status(200).json(order);
     } catch (error) {
         res.status(500).send(error.message);
