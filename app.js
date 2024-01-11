@@ -8,6 +8,7 @@ const authJwt = require('./helpers/jwt');
 const errorHandler = require('./helpers/error-handler');
 const { verifyToken } = require('./authMiddleware');
 const compression = require('compression');
+const path = require('path');
 
 //remove these once stable
 app.use(
