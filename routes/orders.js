@@ -3,11 +3,14 @@ const express = require('express');
 const { OrderItem } = require('../models/order-item');
 const { Product } = require('../models/product');
 const router = express.Router();
+require('dotenv/config');
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = require('stripe')(stripeSecretKey);
 
 const nodemailer = require('nodemailer');
+
+const SITE_URL = process.env.SITE_URL;
 
 async function sendOrderConfirmationEmail(userEmail, orderItems) {
     let transporter = nodemailer.createTransport({
@@ -154,7 +157,7 @@ router.post('/', async (req, res) => {
         }
 
         let order = await Order.findById(tempOrderId).populate({
-            path: 'orderItem',
+            path: 'orderItems',
             populate: {
                 path: 'product',
                 model: 'Product'
@@ -234,8 +237,8 @@ router.post('/create-checkout-session', async (req, res) => {
             customer_email: userEmail,
             line_items: lineItems,
             mode: 'payment',
-            success_url: `${process.env.SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.SITE_URL}/cancel`,
+            success_url: `${SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${SITE_URL}/cancel`,
             locale: 'hu'
         });
         res.json({ id: session.id });
