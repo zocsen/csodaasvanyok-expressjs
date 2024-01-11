@@ -18,6 +18,14 @@ app.use(
     })
 );
 
+// Online payment verification
+app.use(
+    '/.well-known',
+    express.static(path.join(__dirname, '.well-known'), {
+        dotfiles: 'allow'
+    })
+);
+
 //middleware
 app.use(express.json());
 app.use(morgan('combined'));
