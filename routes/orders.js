@@ -38,27 +38,24 @@ A Csodaásványok Csapat`
     let itemsDescription = orderItems
         .map(
             (item) =>
-                `<strong>Termék neve:</strong> ${item.product.name}
-                <strong>Mennyiség:</strong> ${item.quantity} 
-                <strong>Méret:</strong> ${item.size}
-                
-                `
+                `<p><strong>Termék neve:</strong> ${item.product.name}</p>
+                <p><strong>Mennyiség:</strong> ${item.quantity}</p>
+                <p><strong>Méret:</strong> ${item.size}</p>`
         )
-        .join('\n');
+        .join('<br>');
 
     let notificationMailOptions = {
         from: 'csodaasvanyok@gmail.com',
         to: 'csodaasvanyok@gmail.com',
         subject: 'Csodaásványok. Új rendelés!',
-        text: `A következő felhasználó terméket vásárolt: ${userEmail}
+        html: `<p>A következő felhasználó terméket vásárolt: ${userEmail}</p>
+        
+        <p><strong>Vásárolt termékek:</strong></p>
 
-<strong>Vásárolt termékek:</strong>
-
-${itemsDescription}
-
-További részletért:
-https://csodaasvanyok-admin.vercel.app/orders
-`
+        ${itemsDescription}
+        
+        További részletért:
+        https://csodaasvanyok-admin.vercel.app/orders`
     };
 
     transporter.sendMail(customerMailOptions, function (error, info) {
