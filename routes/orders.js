@@ -157,67 +157,72 @@ router.post('/', async (req, res) => {
 });
 
 router.post('/create-checkout-session', async (req, res) => {
-    const orderItems = req.body.items;
-    const deliveryFee = req.body.deliveryFee;
-    const userEmail = req.body.email;
+    try {
+        const orderItems = req.body.items;
+        const deliveryFee = req.body.deliveryFee;
+        const userEmail = req.body.email;
 
-    if (!orderItems) return res.status(400).send('No order items');
+        if (!orderItems) return res.status(400).send('No order items');
 
-    const lineItems = await Promise.all(
-        orderItems.map(async (orderItem) => {
-            const product = await Product.findById(orderItem.id);
-            const price = orderItem.price;
-            const lineItem = {
+        const lineItems = await Promise.all(
+            orderItems.map(async (orderItem) => {
+                const product = await Product.findById(orderItem.id);
+                const price = orderItem.price;
+                const lineItem = {
+                    price_data: {
+                        currency: 'huf',
+                        product_data: {
+                            name: `${product.name} (${orderItem.size})`,
+                            images: [product.image]
+                        },
+                        unit_amount: price * 100
+                    },
+                    quantity: orderItem.quantity
+                };
+                return lineItem;
+            })
+        );
+
+        if (deliveryFee > 0) {
+            lineItems.push({
                 price_data: {
                     currency: 'huf',
                     product_data: {
-                        name: `${product.name} (${orderItem.size})`,
-                        images: [product.image]
+                        name: 'Szállítási díj',
+                        images: [deliveryTruckPNGPath]
                     },
-                    unit_amount: price * 100
+                    unit_amount: deliveryFee * 100
                 },
-                quantity: orderItem.quantity
-            };
-            return lineItem;
-        })
-    );
+                quantity: 1
+            });
+        } else {
+            lineItems.push({
+                price_data: {
+                    currency: 'huf',
+                    product_data: {
+                        name: 'Szállítási díj',
+                        images: [deliveryTruckPNGPath]
+                    },
+                    unit_amount: 0
+                },
+                quantity: 1
+            });
+        }
 
-    if (deliveryFee > 0) {
-        lineItems.push({
-            price_data: {
-                currency: 'huf',
-                product_data: {
-                    name: 'Szállítási díj',
-                    images: [deliveryTruckPNGPath]
-                },
-                unit_amount: deliveryFee * 100
-            },
-            quantity: 1
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            customer_email: userEmail,
+            line_items: lineItems,
+            mode: 'payment',
+            success_url: 'https://www.csodaasvanyok.hu/success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url: 'https://www.csodaasvanyok.hu/cancel',
+            locale: 'hu'
         });
-    } else {
-        lineItems.push({
-            price_data: {
-                currency: 'huf',
-                product_data: {
-                    name: 'Szállítási díj',
-                    images: [deliveryTruckPNGPath]
-                },
-                unit_amount: 0
-            },
-            quantity: 1
-        });
+        res.json({ id: session.id });
+    } catch (error) {
+        console.error(err);
+        res.status(500).send('An error occurred while creating the checkout session');
     }
-
-    const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        customer_email: userEmail,
-        line_items: lineItems,
-        mode: 'payment',
-        success_url: 'https://www.csodaasvanyok.hu/success?session_id={CHECKOUT_SESSION_ID}',
-        cancel_url: 'https://www.csodaasvanyok.hu/cancel',
-        locale: 'hu'
-    });
-    res.json({ id: session.id });
 });
 
 router.put('/:id', async (req, res) => {
