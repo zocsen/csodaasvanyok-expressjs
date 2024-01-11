@@ -153,7 +153,13 @@ router.post('/', async (req, res) => {
             return res.status(400).send('Payment not successful');
         }
 
-        let order = await Order.findById(tempOrderId);
+        let order = await Order.findById(tempOrderId).populate({
+            path: 'orderItem',
+            populate: {
+                path: 'product',
+                model: 'Product'
+            }
+        });
 
         if (!order) {
             throw new Error('Temporary order not found');
