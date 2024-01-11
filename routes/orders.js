@@ -38,7 +38,11 @@ A Csodaásványok Csapat`
     let itemsDescription = orderItems
         .map(
             (item) =>
-                `Termék neve: ${item.product.name}, Mennyiség: ${item.quantity}, Méret: ${item.size}`
+                `<strong>Termék neve:</strong> ${item.product.name}
+                <strong>Mennyiség:</strong> ${item.quantity} 
+                <strong>Méret:</strong> ${item.size}
+                
+                `
         )
         .join('\n');
 
@@ -48,7 +52,8 @@ A Csodaásványok Csapat`
         subject: 'Csodaásványok. Új rendelés!',
         text: `A következő felhasználó terméket vásárolt: ${userEmail}
 
-Vásárolt termékek:
+<strong>Vásárolt termékek:</strong>
+
 ${itemsDescription}
 
 További részletért:
