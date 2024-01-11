@@ -47,7 +47,13 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
         //
         const productList = await Product.find(filter)
             .populate('category')
-            .populate('mineral')
+            .populate({
+                path: 'mineral',
+                populate: {
+                    path: 'benefit',
+                    model: 'Benefit'
+                }
+            })
             .populate('subcategory')
             .populate('color');
 
