@@ -220,7 +220,7 @@ router.post('/create-checkout-session', async (req, res) => {
         });
         res.json({ id: session.id });
     } catch (error) {
-        console.error(err);
+        console.error(error);
         res.status(500).send('An error occurred while creating the checkout session');
     }
 });
