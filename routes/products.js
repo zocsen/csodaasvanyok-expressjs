@@ -78,7 +78,13 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
 router.get(`/:id`, cacheMiddleware(2000000), async (req, res) => {
     const product = await Product.findById(req.params.id)
         .populate('category')
-        .populate('mineral')
+        .populate({
+            path: 'mineral',
+            populate: {
+                path: 'benefit',
+                model: 'Benefit'
+            }
+        })
         .populate('subcategory')
         .populate('color');
 
