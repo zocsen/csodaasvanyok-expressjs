@@ -1,71 +1,68 @@
-const {Benefit} = require('../models/benefit');
+const { Benefit } = require('../models/benefit');
 const express = require('express');
 const router = express.Router();
 const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
 
-router.get(`/`, cacheMiddleware(2000000), async (req, res) =>{
-    const benefitList = await Benefit.find();
+router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
+    const benefitList = await Benefit.find().sort({ name: 1 });
 
-    if(!benefitList) {
-        res.status(500).json({success: false})
-    } 
+    if (!benefitList) {
+        res.status(500).json({ success: false });
+    }
     res.status(200).send(benefitList);
-})
+});
 
-router.get('/:id', cacheMiddleware(2000000), async(req,res)=>{
+router.get('/:id', cacheMiddleware(2000000), async (req, res) => {
     const benefit = await Benefit.findById(req.params.id);
 
-    if(!benefit) {
-        res.status(500).json({message: 'The benefit with the given ID was not found.'})
-    } 
+    if (!benefit) {
+        res.status(500).json({ message: 'The benefit with the given ID was not found.' });
+    }
     res.status(200).send(benefit);
-})
+});
 
-
-
-router.post('/', async (req,res)=>{
+router.post('/', async (req, res) => {
     let benefit = new Benefit({
-        name: req.body.name,
-    })
+        name: req.body.name
+    });
     benefit = await benefit.save();
 
-    if(!benefit)
-    return res.status(400).send('the benefit cannot be created!')
+    if (!benefit) return res.status(400).send('the benefit cannot be created!');
 
-    clearAllCache()
+    clearAllCache();
 
     res.send(benefit);
-})
+});
 
-
-router.put('/:id',async (req, res)=> {
+router.put('/:id', async (req, res) => {
     const benefit = await Benefit.findByIdAndUpdate(
         req.params.id,
         {
-            name: req.body.name,
+            name: req.body.name
         },
-        { new: true}
-    )
+        { new: true }
+    );
 
-    if(!benefit)
-    return res.status(400).send('the benefit cannot be created!')
+    if (!benefit) return res.status(400).send('the benefit cannot be created!');
 
-    clearAllCache()
+    clearAllCache();
 
     res.send(benefit);
-})
+});
 
-router.delete('/:id', (req, res)=>{
-    Benefit.findByIdAndRemove(req.params.id).then(benefit =>{
-        if (benefit) {
-            clearAllCache()
-            return res.status(200).json({success: true, message: 'the benefit is deleted!'})
-        } else {
-            return res.status(404).json({success: false , message: "benefit not found!"})
-        }
-    }).catch(err=>{
-       return res.status(500).json({success: false, error: err}) 
-    })
-})
+router.delete('/:id', (req, res) => {
+    Benefit.findByIdAndRemove(req.params.id)
+        .then((benefit) => {
+            if (benefit) {
+                clearAllCache();
+                return res.status(200).json({ success: true, message: 'the benefit is deleted!' });
+            } else {
+                return res.status(404).json({ success: false, message: 'benefit not found!' });
+            }
+        })
+        .catch((err) => {
+            return res.status(500).json({ success: false, error: err });
+        });
+});
 
-module.exports =router;
+module.exports = router;
