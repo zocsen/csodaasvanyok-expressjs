@@ -4,7 +4,7 @@ const router = express.Router();
 const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
 
 router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
-    const benefitList = await Benefit.find().sort({ name: 1 });
+    const benefitList = await Benefit.find().collation({ locale: 'hu' }).sort({ name: 1 });
 
     if (!benefitList) {
         res.status(500).json({ success: false });

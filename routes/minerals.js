@@ -11,7 +11,10 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
         filter = { benefit: req.query.benefits.split(',') };
     }
 
-    const mineralList = await Mineral.find(filter).populate('benefit').sort({ name: 1 });
+    const mineralList = await Mineral.find(filter)
+        .populate('benefit')
+        .collation({ locale: 'hu' })
+        .sort({ name: 1 });
 
     if (!mineralList) {
         res.status(500).json({ success: false });
