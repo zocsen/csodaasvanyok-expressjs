@@ -113,6 +113,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
     const fileName = `${path.parse(file.originalname).name}.webp`;
 
     const resizedImageBuffer = await sharp(file.buffer)
+        .rotate()
         .resize({ width: 600, height: 600, fit: 'inside' })
         .withMetadata()
         .webp()
@@ -206,6 +207,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
         const newFileName = `${path.parse(file.originalname).name}.webp`;
 
         const resizedImageBuffer = await sharp(file.buffer)
+            .rotate()
             .resize({ width: 600, height: 600, fit: 'inside' })
             .withMetadata()
             .webp()
