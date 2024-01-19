@@ -12,7 +12,7 @@ const nodemailer = require('nodemailer');
 
 const SITE_URL = process.env.SITE_URL;
 
-async function sendOrderConfirmationEmail(userEmail, orderItems) {
+async function sendOrderConfirmationEmail(orderId, userEmail, orderItems) {
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -20,20 +20,6 @@ async function sendOrderConfirmationEmail(userEmail, orderItems) {
             pass: `${process.env.EMAIL_PASSWORD}`
         }
     });
-
-    let customerMailOptions = {
-        from: 'csodaasvanyok@gmail.com',
-        to: userEmail,
-        subject: 'Csodaásványok Rendelés Visszaigazolása',
-        text: `Tisztelt Vásárlónk!
-
-Szeretnénk megköszönni, hogy a Csodaásványok webáruházat választotta. Örömmel értesítjük, hogy rendelését sikeresen rögzítettük, és az jelenleg feldolgozás alatt áll. Amennyiben a FoxPost Csomagautomatát választotta kézbesítési módként, rövidesen küldünk Önnek egy következő lépéseket ismertető e-mailt, amely tartalmazza a csomag nyomon követéséhez szükséges információkat és az átvétellel kapcsolatos tudnivalókat.
-
-Köszönjük türelmét és bizalmát, és reméljük, hogy rendelése hamarosan örömet okoz majd Önnek!
-
-Üdvözlettel,
-A Csodaásványok Csapat`
-    };
 
     let itemsDescription = orderItems
         .map(
@@ -43,6 +29,26 @@ A Csodaásványok Csapat`
                 <p><strong>Méret:</strong> ${item.size}</p>`
         )
         .join('<br>');
+
+    let customerMailOptions = {
+        from: 'csodaasvanyok@gmail.com',
+        to: userEmail,
+        subject: 'Csodaásványok Rendelés Visszaigazolása',
+        html: `Tisztelt Vásárlónk!
+
+<p>Szeretnénk megköszönni, hogy a Csodaásványok webáruházat választotta. Örömmel értesítjük, hogy rendelését sikeresen rögzítettük, és az jelenleg feldolgozás alatt áll. Amennyiben a FoxPost Csomagautomatát választotta kézbesítési módként, rövidesen küldünk Önnek egy következő lépéseket ismertető e-mailt, amely tartalmazza a csomag nyomon követéséhez szükséges információkat és az átvétellel kapcsolatos tudnivalókat. </p>
+
+<p>Köszönjük türelmét és bizalmát, és reméljük, hogy rendelése hamarosan örömet okoz majd Önnek!</p>
+
+<p>A rendelés száma: ${orderId}</p>
+        
+<p><strong>Vásárolt termékek:</strong></p>
+
+${itemsDescription}
+
+Üdvözlettel,
+A Csodaásványok Csapat`
+    };
 
     let notificationMailOptions = {
         from: 'csodaasvanyok@gmail.com',
@@ -174,7 +180,7 @@ router.post('/', async (req, res) => {
 
         order = await order.save();
 
-        await sendOrderConfirmationEmail(order.email, order.orderItems);
+        await sendOrderConfirmationEmail(order._id, order.email, order.orderItems);
         res.status(200).json(order);
     } catch (error) {
         res.status(500).send(error.message);
