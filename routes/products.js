@@ -116,7 +116,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
         .resize({ width: 800, height: 800, fit: 'inside' })
         .withMetadata()
         .webp()
-        .sharpen({ sigma: 2 })
+        .sharpen({ sigma: 1 })
         .toBuffer();
 
     // Set up the S3 upload parameters
@@ -210,7 +210,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             .resize({ width: 800, height: 800, fit: 'inside' })
             .withMetadata()
             .webp()
-            .sharpen({ sigma: 10 })
+            .sharpen({ sigma: 1 })
             .toBuffer();
 
         const params = {
