@@ -210,7 +210,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             .resize({ width: 800, height: 800, fit: 'inside' })
             .withMetadata()
             .webp()
-            .sharpen({ sigma: 2 })
+            .sharpen({ sigma: 10 })
             .toBuffer();
 
         const params = {
