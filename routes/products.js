@@ -113,10 +113,10 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
     const fileName = `${path.parse(file.originalname).name}.webp`;
 
     const resizedImageBuffer = await sharp(file.buffer)
-        .rotate()
-        .resize({ width: 600, height: 600, fit: 'inside' })
+        .resize({ width: 800, height: 800, fit: 'inside' })
         .withMetadata()
         .webp()
+        .sharpen({ sigma: 2 })
         .toBuffer();
 
     // Set up the S3 upload parameters
@@ -207,10 +207,10 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
         const newFileName = `${path.parse(file.originalname).name}.webp`;
 
         const resizedImageBuffer = await sharp(file.buffer)
-            .rotate()
-            .resize({ width: 600, height: 600, fit: 'inside' })
+            .resize({ width: 800, height: 800, fit: 'inside' })
             .withMetadata()
             .webp()
+            .sharpen({ sigma: 2 })
             .toBuffer();
 
         const params = {
