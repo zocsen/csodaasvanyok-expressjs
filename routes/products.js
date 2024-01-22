@@ -116,6 +116,7 @@ router.post(`/`, uploadOptions.single('image'), async (req, res) => {
         .resize({ width: 800, height: 800, fit: 'inside' })
         .withMetadata()
         .webp()
+        .rotate()
         .sharpen({ sigma: 1 })
         .toBuffer();
 
@@ -210,6 +211,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             .resize({ width: 800, height: 800, fit: 'inside' })
             .withMetadata()
             .webp()
+            .rotate()
             .sharpen({ sigma: 1 })
             .toBuffer();
 
