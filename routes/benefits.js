@@ -7,11 +7,10 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
     try {
         const benefitList = await Benefit.find().collation({ locale: 'hu' }).sort({ name: 1 });
 
-        res.status(200).json({
-            success: true,
-            message: 'Benefits fetched successfully',
-            data: benefitList
-        });
+        if (!benefitList || benefitList.length === 0) {
+            return res.status(200).json([]);
+        }
+        res.status(200).send(benefitList);
     } catch (error) {
         console.error('Error fetching benefits: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -34,13 +33,9 @@ router.get('/:id', cacheMiddleware(2000000), async (req, res) => {
                 message: 'The benefit with the given ID was not found.'
             });
         }
-        res.status(200).json({
-            success: true,
-            message: 'Benefit fetched by ID successfully',
-            data: benefit
-        });
+        res.status(200).send(benefit);
     } catch (error) {
-        console.error('Error fetching benefit by ID: ', error);
+        console.error('Error fetching benefit by Id: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
@@ -58,11 +53,7 @@ router.post('/', async (req, res) => {
 
         clearAllCache();
 
-        res.status(201).json({
-            success: true,
-            message: 'Benefit created successfully',
-            data: benefit
-        });
+        res.status(201).send(benefit);
     } catch (error) {
         console.error('Error posting benefit: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -89,11 +80,7 @@ router.put('/:id', async (req, res) => {
 
         clearAllCache();
 
-        res.status(200).json({
-            success: true,
-            message: 'Benefit updated successfully',
-            data: benefit
-        });
+        res.send(benefit);
     } catch (error) {
         console.error('Error updating benefit: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });

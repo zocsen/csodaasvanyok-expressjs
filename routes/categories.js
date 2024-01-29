@@ -10,11 +10,7 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
         if (!categoryList || categoryList.length === 0) {
             res.status(200).json([]);
         }
-        res.status(200).json({
-            success: true,
-            message: 'Categories fetched successfully',
-            data: categoryList
-        });
+        res.status(200).send(categoryList);
     } catch (error) {
         console.error('Error fetching categories: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -37,11 +33,7 @@ router.get('/:id', cacheMiddleware(2000000), async (req, res) => {
                 message: 'The category with the given ID was not found.'
             });
         }
-        res.status(200).json({
-            success: true,
-            message: 'Category fetched by ID successfully',
-            data: category
-        });
+        res.status(200).send(category);
     } catch (error) {
         console.error('Error fetching category by Id: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -63,11 +55,7 @@ router.post('/', async (req, res) => {
 
         clearAllCache();
 
-        res.status(201).json({
-            success: true,
-            message: 'Category created successfully',
-            data: category
-        });
+        res.status(201).send(category);
     } catch (error) {}
 });
 
@@ -99,11 +87,7 @@ router.put('/:id', async (req, res) => {
 
         clearAllCache();
 
-        res.status(200).json({
-            success: true,
-            message: 'Category updated successfully',
-            data: category
-        });
+        res.send(category);
     } catch (error) {}
 });
 
