@@ -47,7 +47,7 @@ router.post('/', async (req, res) => {
 
         clearAllCache();
 
-        res.status.send(201).send(benefit);
+        res.status(201).send(benefit);
     } catch (error) {
         console.error('Error posting benefit: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
