@@ -2,6 +2,7 @@ const { Benefit } = require('../models/benefit');
 const express = require('express');
 const router = express.Router();
 const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
+const mongoose = require('mongoose');
 
 router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
     try {
@@ -20,7 +21,7 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
 router.get('/:id', cacheMiddleware(2000000), async (req, res) => {
     const { id } = req.params;
 
-    if (!id || !isValidObjectId(id)) {
+    if (!id || !mongoose.isValidObjectId(id)) {
         return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
     }
 
@@ -55,7 +56,7 @@ router.post('/', async (req, res) => {
 
         res.status(201).json(benefit);
     } catch (error) {
-        console.error('Error posting benefit: ', error);
+        console.error('Error creating benefit: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
@@ -63,7 +64,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
 
-    if (!id || !isValidObjectId(id)) {
+    if (!id || !mongoose.isValidObjectId(id)) {
         return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
     }
 
@@ -90,7 +91,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     const { id } = req.params;
 
-    if (!id || !isValidObjectId(id)) {
+    if (!id || !mongoose.isValidObjectId(id)) {
         return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
     }
 

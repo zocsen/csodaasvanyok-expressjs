@@ -4,6 +4,7 @@ const { OrderItem } = require('../models/order-item');
 const { Product } = require('../models/product');
 const router = express.Router();
 require('dotenv/config');
+const mongoose = require('mongoose');
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = require('stripe')(stripeSecretKey);
@@ -85,29 +86,44 @@ const deliveryTruckPNGPath =
     'https://csodaasvanyok-bucket.s3.eu-central-1.amazonaws.com/delivery-truck.png';
 
 router.get(`/`, async (req, res) => {
-    const orderList = await Order.find().populate('user', 'name').sort({ dateOrdered: -1 });
+    try {
+        const orderList = await Order.find().populate('user', 'name').sort({ dateOrdered: -1 });
 
-    if (!orderList) {
-        res.status(500).json({ success: false });
+        if (!orderList || orderList.length === 0) {
+            return res.status(200).json([]);
+        }
+        res.status(200).json(orderList);
+    } catch (error) {
+        console.error('Error fetching orders: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
-    res.send(orderList);
 });
 
 router.get(`/:id`, async (req, res) => {
-    const order = await Order.findById(req.params.id)
-        .populate('user', 'name')
-        .populate({
-            path: 'orderItems',
-            populate: {
-                path: 'product',
-                populate: 'category'
-            }
-        });
+    const { id } = req.params;
 
-    if (!order) {
-        res.status(500).json({ success: false });
+    if (!id || !mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
     }
-    res.send(order);
+    try {
+        const order = await Order.findById(id)
+            .populate('user', 'name')
+            .populate({
+                path: 'orderItems',
+                populate: {
+                    path: 'product',
+                    populate: 'category'
+                }
+            });
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+        res.status(200).json(order);
+    } catch (error) {
+        console.error('Error getting order by ID: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 router.post('/temp-order', async (req, res) => {
@@ -145,12 +161,15 @@ router.post('/temp-order', async (req, res) => {
         tempOrder = await tempOrder.save();
 
         if (!tempOrder) {
-            throw new Error('Temporary order creation failed');
+            return res
+                .status(400)
+                .json({ success: false, message: 'Temporary order creation unsuccessful!' });
         }
 
         res.status(200).json({ tempOrderId: tempOrder._id });
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error('Error creating temporary order', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
 
@@ -173,7 +192,10 @@ router.post('/', async (req, res) => {
         });
 
         if (!order) {
-            throw new Error('Temporary order not found');
+            return res.status(404).json({
+                success: false,
+                message: 'Temporary order not found when creating order.'
+            });
         }
 
         order.status = 1;
@@ -183,7 +205,8 @@ router.post('/', async (req, res) => {
         await sendOrderConfirmationEmail(order._id, order.email, order.orderItems);
         res.status(200).json(order);
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error('Error posting order: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
 
@@ -249,87 +272,136 @@ router.post('/create-checkout-session', async (req, res) => {
             cancel_url: `${SITE_URL}/cancel`,
             locale: 'hu'
         });
-        res.json({ id: session.id });
+        res.status(200).json({ id: session.id });
     } catch (error) {
-        console.error(error);
-        res.status(500).send('An error occurred while creating the checkout session');
+        console.error('Error during create-checkout-session: ', error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred while creating the checkout session'
+        });
     }
 });
 
 router.put('/:id', async (req, res) => {
-    const order = await Order.findByIdAndUpdate(
-        req.params.id,
-        {
-            status: req.body.status
-        },
-        { new: true }
-    );
+    const { id } = req.params;
 
-    if (!order) return res.status(400).send('the order cannot be update!');
+    if (!id || !mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
+    try {
+        if (!req.body.status) {
+            return res.status(400).json({ success: false, message: 'Order status required!' });
+        }
+        const order = await Order.findByIdAndUpdate(
+            req.params.id,
+            {
+                status: req.body.status
+            },
+            { new: true }
+        );
 
-    res.send(order);
+        if (!order) return res.status(400).send('Order not found!');
+
+        res.status(200).json(order);
+    } catch (error) {
+        console.error('Error updating order: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
-router.delete('/:id', (req, res) => {
-    Order.findByIdAndRemove(req.params.id)
-        .then(async (order) => {
-            if (order) {
-                await order.orderItems.map(async (orderItem) => {
-                    await OrderItem.findByIdAndRemove(orderItem);
-                });
-                return res.status(200).json({ success: true, message: 'the order is deleted!' });
-            } else {
-                return res.status(404).json({ success: false, message: 'order not found!' });
-            }
-        })
-        .catch((err) => {
-            return res.status(500).json({ success: false, error: err });
-        });
+router.delete('/:id', async (req, res) => {
+    const { id } = req.params;
+
+    if (!id || !mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
+
+    try {
+        const order = await Order.findByIdAndRemove(id);
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        if (order.orderItems && order.orderItems.length > 0) {
+            await Promise.all(
+                order.orderItems.map(async (orderItemId) => {
+                    await OrderItem.findByIdAndRemove(orderItemId);
+                })
+            );
+        }
+
+        res.status(200).json({ success: true, message: 'The order is deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting order: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 router.get('/get/totalsales', async (req, res) => {
-    const totalSales = await Order.aggregate([
-        { $group: { _id: null, totalsales: { $sum: '$totalPrice' } } }
-    ]);
+    try {
+        const totalSales = await Order.aggregate([
+            { $group: { _id: null, totalsales: { $sum: '$totalPrice' } } }
+        ]);
 
-    if (!totalSales || totalSales.length === 0) {
-        return res.status(400).send('The order sales cannot be generated');
+        if (!totalSales || totalSales.length === 0) {
+            return res.send({ totalsales: 0 });
+        }
+
+        res.send({ totalsales: totalSales[0].totalsales });
+    } catch (error) {
+        console.error('Error getting total sales: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
-
-    res.send({ totalsales: totalSales[0].totalsales });
 });
 
 router.get(`/get/count`, async (req, res) => {
-    const orderCount = await Order.countDocuments((count) => count);
+    try {
+        const orderCount = await Order.countDocuments((count) => count);
 
-    if (!orderCount) {
-        res.status(500).json({ success: false });
+        if (!orderCount) {
+            return res.send({ orderCount: 0 });
+        }
+        res.send({
+            orderCount: orderCount
+        });
+    } catch (error) {
+        console.error('Error getting order count: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
-    res.send({
-        orderCount: orderCount
-    });
 });
 
+//TODO
 router.get(`/get/userorders/:userid`, async (req, res) => {
-    const userOrderList = await Order.find({ user: req.params.userid })
-        .populate({
-            path: 'orderItems',
-            populate: {
-                path: 'product',
-                populate: 'category'
-            }
-        })
-        .sort({ dateOrdered: -1 });
+    try {
+        const userOrderList = await Order.find({ user: req.params.userid })
+            .populate({
+                path: 'orderItems',
+                populate: {
+                    path: 'product',
+                    populate: 'category'
+                }
+            })
+            .sort({ dateOrdered: -1 });
 
-    if (!userOrderList) {
-        res.status(500).json({ success: false });
+        if (!userOrderList) {
+            return res.status(500).json({ success: false });
+        }
+        res.send(userOrderList);
+    } catch (error) {
+        console.error('Error getting userOrders: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
-    res.send(userOrderList);
 });
 
 router.get(`/:id`, async (req, res) => {
+    const { id } = req.params;
+
+    if (!id || !mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
     try {
-        const order = await Order.findById(req.params.id).populate({
+        const order = await Order.findById(id).populate({
             path: 'orderItems',
             populate: {
                 path: 'product',
@@ -341,9 +413,10 @@ router.get(`/:id`, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
-        res.json(order);
+        res.status(200).json(order);
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Error getting order: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
 

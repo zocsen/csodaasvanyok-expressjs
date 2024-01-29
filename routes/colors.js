@@ -1,73 +1,121 @@
-const {Color} = require('../models/color');
+const { Color } = require('../models/color');
 const express = require('express');
 const router = express.Router();
 const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
+const mongoose = require('mongoose');
 
-router.get(`/`, cacheMiddleware(2000000), async (req, res) =>{
-    const colorList = await Color.find();
+router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
+    try {
+        const colorList = await Color.find();
 
-    if(!colorList) {
-        res.status(500).json({success: false})
-    } 
-    res.status(200).send(colorList);
-})
-
-router.get('/:id', cacheMiddleware(2000000), async(req,res)=>{
-    const color = await Color.findById(req.params.id);
-
-    if(!color) {
-        res.status(500).json({message: 'The color with the given ID was not found.'})
-    } 
-    res.status(200).send(color);
-})
-
-
-
-router.post('/', async (req,res)=>{
-    let color = new Color({
-        name: req.body.name,
-        code: req.body.code,
-    })
-    color = await color.save();
-
-    if(!color)
-    return res.status(400).send('the color cannot be created!')
-
-    clearAllCache()
-    
-    res.send(color);
-})
-
-
-router.put('/:id',async (req, res)=> {
-    const color = await Color.findByIdAndUpdate(
-        req.params.id,
-        {
-            name: req.body.name,
-            code: req.body.code,
-        },
-        { new: true}
-    )
-
-    if(!color)
-    return res.status(400).send('the color cannot be created!')
-
-    clearAllCache()
-
-    res.send(color);
-})
-
-router.delete('/:id', (req, res)=>{
-    Color.findByIdAndRemove(req.params.id).then(color =>{
-        if (color) {
-            clearAllCache()
-            return res.status(200).json({success: true, message: 'the color is deleted!'})
-        } else {
-            return res.status(404).json({success: false , message: "color not found!"})
+        if (!colorList) {
+            return res.status(200).json([]);
         }
-    }).catch(err=>{
-       return res.status(500).json({success: false, error: err}) 
-    })
-})
+        res.status(200).json(colorList);
+    } catch (error) {
+        console.error('Error fetching colors: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
 
-module.exports =router;
+router.get('/:id', cacheMiddleware(2000000), async (req, res) => {
+    const { id } = req.params;
+
+    if (!id || !mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
+
+    try {
+        const color = await Color.findById(id);
+
+        if (!color) {
+            return res.status(404).json({ message: 'The color with the given ID was not found.' });
+        }
+        res.status(200).send(color);
+    } catch (error) {
+        console.error('Error fetching color by ID: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
+
+router.post('/', async (req, res) => {
+    try {
+        if (!req.body.name) {
+            return res.status(400).json({ success: false, message: 'Color name is required!' });
+        }
+        if (!req.body.code) {
+            return res.status(400).json({ success: false, message: 'Color code is required!' });
+        }
+        let color = new Color({
+            name: req.body.name,
+            code: req.body.code
+        });
+        color = await color.save();
+
+        clearAllCache();
+
+        res.status(201).json(color);
+    } catch (error) {
+        console.error('Error creating color: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
+
+router.put('/:id', async (req, res) => {
+    const { id } = req.params;
+
+    if (!id || !mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
+    try {
+        if (!req.body.name) {
+            return res.status(400).json({ success: false, message: 'Color name is required' });
+        }
+        if (!req.body.code) {
+            return res.status(400).json({ success: false, message: 'Color code is required' });
+        }
+        const color = await Color.findByIdAndUpdate(
+            req.params.id,
+            {
+                name: req.body.name,
+                code: req.body.code
+            },
+            { new: true }
+        );
+
+        if (!color) {
+            return res.status(404).json({ success: false, message: 'Color not found' });
+        }
+
+        clearAllCache();
+
+        res.status(200).json(color);
+    } catch (error) {
+        console.error('Error updating color: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
+
+router.delete('/:id', async (req, res) => {
+    const { id } = req.params;
+
+    if (!id || !mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
+
+    try {
+        const color = await Color.findByIdAndRemove(id);
+
+        if (!color) {
+            return res.status(404).json({ success: false, message: 'Color not found' });
+        }
+
+        clearAllCache();
+        res.status(200).json({ success: true, message: 'The color is deleted!' });
+    } catch (error) {
+        console.error('Error fetching benefits: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
+
+module.exports = router;

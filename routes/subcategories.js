@@ -1,73 +1,117 @@
-const {Subcategory} = require('../models/subcategory');
+const { Subcategory } = require('../models/subcategory');
 const express = require('express');
 const router = express.Router();
 const { cacheMiddleware, clearAllCache } = require('../cacheMiddleware');
+const mongoose = require('mongoose');
 
-router.get(`/`, cacheMiddleware(2000000), async (req, res) =>{
-    const subcategoryList = await Subcategory.find();
+router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
+    try {
+        const subcategoryList = await Subcategory.find();
+        if (!subcategoryList) {
+            return res.status(200).json([]);
+        }
+        res.status(200).send(subcategoryList);
+    } catch (error) {
+        console.error('Error fetching subcategories ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
 
-    if(!subcategoryList) {
-        res.status(500).json({success: false})
-    } 
-    res.status(200).send(subcategoryList);
-})
+router.get('/:id', cacheMiddleware(2000000), async (req, res) => {
+    const { id } = req.params;
 
-router.get('/:id', cacheMiddleware(2000000), async(req,res)=>{
-    const subcategory = await Subcategory.findById(req.params.id);
+    if (!id || !mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
 
-    if(!subcategory) {
-        res.status(500).json({message: 'The subcategory with the given ID was not found.'})
-    } 
-    res.status(200).send(subcategory);
-})
+    try {
+        const subcategory = await Subcategory.findById(id);
 
+        if (!subcategory) {
+            return res.status(404).json({
+                success: false,
+                message: 'The subcategory with the given ID was not found.'
+            });
+        }
+        res.status(200).send(subcategory);
+    } catch (error) {
+        console.error('Error fetching subcategory by ID: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
 
-
-router.post('/', async (req,res)=>{
-    let subcategory = new Subcategory({
-        name: req.body.name,
-        description: req.body.description,
-    })
-    subcategory = await subcategory.save();
-
-    if(!subcategory)
-    return res.status(400).send('the subcategory cannot be created!')
-
-    clearAllCache()
-
-    res.send(subcategory);
-})
-
-
-router.put('/:id',async (req, res)=> {
-    const subcategory = await Subcategory.findByIdAndUpdate(
-        req.params.id,
-        {
+router.post('/', async (req, res) => {
+    try {
+        if (!req.body.name) {
+            return res.status(400).json({ success: false, message: 'The name is required!' });
+        }
+        let subcategory = new Subcategory({
             name: req.body.name,
-            description: req.body.description,
-        },
-        { new: true}
-    )
+            description: req.body.description
+        });
+        subcategory = await subcategory.save();
 
-    if(!subcategory)
-    return res.status(400).send('the subcategory cannot be created!')
+        clearAllCache();
 
-    clearAllCache()
+        res.status(200).json(subcategory);
+    } catch (error) {
+        console.error('Error creating subcategory ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
 
-    res.send(subcategory);
-})
+router.put('/:id', async (req, res) => {
+    const { id } = req.params;
+
+    if (!id || !mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
+
+    try {
+        if (!req.body.name) {
+            return res.status(400).json({ success: false, message: 'The name is required!' });
+        }
+        const subcategory = await Subcategory.findByIdAndUpdate(
+            req.params.id,
+            {
+                name: req.body.name,
+                description: req.body.description
+            },
+            { new: true }
+        );
+
+        if (!subcategory) {
+            return res.status(404).json({ success: false, message: 'Subcategory not found' });
+        }
+
+        clearAllCache();
+
+        res.status(200).json(subcategory);
+    } catch (error) {
+        console.error('Error updating subcategory', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
 
 router.delete('/:id', (req, res) => {
-    Subcategory.findByIdAndRemove(req.params.id).then(subcategory =>{
-        if (subcategory) {
-            clearAllCache()
-            return res.status(200).json({success: true, message: 'the subcategory is deleted!'})
-        } else {
-            return res.status(404).json({success: false , message: "subcategory not found!"})
-        }
-    }).catch(err=>{
-       return res.status(500).json({success: false, error: err}) 
-    })
-})
+    const { id } = req.params;
 
-module.exports =router;
+    if (!id || !mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
+    try {
+        const subcategory = Subcategory.findByIdAndRemove(id);
+
+        if (!subcategory) {
+            return res.status(404).json({ success: false, message: 'Subcategory not found!' });
+        }
+
+        clearAllCache();
+        res.status(200).json({ success: true, message: 'The subcategory is deleted!' });
+    } catch (error) {
+        console.error('Error deleting subcategory ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
+
+module.exports = router;
