@@ -7,9 +7,6 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
     try {
         const benefitList = await Benefit.find().collation({ locale: 'hu' }).sort({ name: 1 });
 
-        if (!benefitList || benefitList.length === 0) {
-            return res.status(200).json([]);
-        }
         res.status(200).json({
             success: true,
             message: 'Benefits fetched successfully',
