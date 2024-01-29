@@ -10,7 +10,11 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
         if (!benefitList || benefitList.length === 0) {
             return res.status(200).json([]);
         }
-        res.status(200).send(benefitList);
+        res.status(200).json({
+            success: true,
+            message: 'Benefits fetched successfully',
+            data: benefitList
+        });
     } catch (error) {
         console.error('Error fetching benefits: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -18,8 +22,14 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
 });
 
 router.get('/:id', cacheMiddleware(2000000), async (req, res) => {
+    const { id } = req.params;
+
+    if (!id || !isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
+
     try {
-        const benefit = await Benefit.findById(req.params.id);
+        const benefit = await Benefit.findById(id);
 
         if (!benefit) {
             return res.status(404).json({
@@ -27,9 +37,13 @@ router.get('/:id', cacheMiddleware(2000000), async (req, res) => {
                 message: 'The benefit with the given ID was not found.'
             });
         }
-        res.status(200).send(benefit);
+        res.status(200).json({
+            success: true,
+            message: 'Benefit fetched by ID successfully',
+            data: benefit
+        });
     } catch (error) {
-        console.error('Error fetching benefit by Id: ', error);
+        console.error('Error fetching benefit by ID: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
@@ -47,7 +61,11 @@ router.post('/', async (req, res) => {
 
         clearAllCache();
 
-        res.status(201).send(benefit);
+        res.status(201).json({
+            success: true,
+            message: 'Benefit created successfully',
+            data: benefit
+        });
     } catch (error) {
         console.error('Error posting benefit: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -55,16 +73,18 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
+    const { id } = req.params;
+
+    if (!id || !isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
+
     try {
         if (!req.body.name) {
             return res.status(400).json({ success: false, message: 'Benefit name is required' });
         }
 
-        const benefit = await Benefit.findByIdAndUpdate(
-            req.params.id,
-            { name: req.body.name },
-            { new: true }
-        );
+        const benefit = await Benefit.findByIdAndUpdate(id, { name: req.body.name }, { new: true });
 
         if (!benefit) {
             return res.status(404).json({ success: false, message: 'Benefit not found' });
@@ -72,7 +92,11 @@ router.put('/:id', async (req, res) => {
 
         clearAllCache();
 
-        res.send(benefit);
+        res.status(200).json({
+            success: true,
+            message: 'Benefit updated successfully',
+            data: benefit
+        });
     } catch (error) {
         console.error('Error updating benefit: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -80,8 +104,14 @@ router.put('/:id', async (req, res) => {
 });
 
 router.delete('/:id', async (req, res) => {
+    const { id } = req.params;
+
+    if (!id || !isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
+
     try {
-        const benefit = await Benefit.findByIdAndRemove(req.params.id);
+        const benefit = await Benefit.findByIdAndRemove(id);
 
         if (!benefit) {
             return res.status(404).json({ success: false, message: 'Benefit not found!' });
