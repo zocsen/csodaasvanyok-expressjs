@@ -8,9 +8,9 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
         const categoryList = await Category.find();
 
         if (!categoryList || categoryList.length === 0) {
-            res.status(200).json([]);
+            return res.status(200).json([]);
         }
-        res.status(200).send(categoryList);
+        res.status(200).json(categoryList);
     } catch (error) {
         console.error('Error fetching categories: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -28,12 +28,12 @@ router.get('/:id', cacheMiddleware(2000000), async (req, res) => {
         const category = await Category.findById(id);
 
         if (!category) {
-            res.status(404).json({
+            return res.status(404).json({
                 success: false,
                 message: 'The category with the given ID was not found.'
             });
         }
-        res.status(200).send(category);
+        res.status(200).json(category);
     } catch (error) {
         console.error('Error fetching category by Id: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -55,8 +55,11 @@ router.post('/', async (req, res) => {
 
         clearAllCache();
 
-        res.status(201).send(category);
-    } catch (error) {}
+        res.status(201).json(category);
+    } catch (error) {
+        console.error('Error creating category: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 router.put('/:id', async (req, res) => {
@@ -87,8 +90,11 @@ router.put('/:id', async (req, res) => {
 
         clearAllCache();
 
-        res.send(category);
-    } catch (error) {}
+        res.status(200).json(category);
+    } catch (error) {
+        console.error('Error updating category: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 router.delete('/:id', async (req, res) => {

@@ -57,8 +57,8 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
             .populate('subcategory')
             .populate('color');
 
-        if (!productList) {
-            res.status(500).json({ success: false });
+        if (!productList || productList.length === 0) {
+            return res.status(200).json([]);
         }
 
         // Replace the image URL with S3 URL
@@ -69,143 +69,64 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
             });
         }
 
-        res.send(productList);
+        res.status(200).json(productList);
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error('Error fetching products: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 });
 
 router.get(`/:id`, cacheMiddleware(2000000), async (req, res) => {
-    const product = await Product.findById(req.params.id)
-        .populate('category')
-        .populate({
-            path: 'mineral',
-            populate: {
-                path: 'benefit',
-                model: 'Benefit'
-            }
-        })
-        .populate('subcategory')
-        .populate('color');
+    const { id } = req.params;
 
-    if (!product) {
-        res.status(500).json({ success: false });
+    if (!id || !isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
     }
 
-    res.send(product);
+    try {
+        const product = await Product.findById(id)
+            .populate('category')
+            .populate({
+                path: 'mineral',
+                populate: {
+                    path: 'benefit',
+                    model: 'Benefit'
+                }
+            })
+            .populate('subcategory')
+            .populate('color');
+
+        if (!product) {
+            res.status(404).json({
+                success: false,
+                message: 'The product with the given ID was not found.'
+            });
+        }
+
+        res.status(200).json(product);
+    } catch (error) {
+        console.error('Error fetching product: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 router.post(`/`, uploadOptions.single('image'), async (req, res) => {
-    // Retrieve the category from the database using its ID
-    const category = await Category.findById(req.body.category);
-    if (!category) {
-        return res.status(400).send('Invalid Category');
-    }
-    // TODO DO the above for mineral and subcategory without breaking the program due ID Array!!
+    try {
+        // Retrieve the category from the database using its ID
+        const category = await Category.findById(req.body.category);
+        if (!category) {
+            return res.status(400).send('Invalid Category');
+        }
+        // TODO DO the above for mineral and subcategory without breaking the program due ID Array!!
 
-    // Retrieve the uploaded file from the request
-    const file = req.file;
-    if (!file) {
-        return res.status(400).send('No image in the request');
-    }
-
-    // Create a unique filename for the image to be stored in S3
-    const fileName = `${path.parse(file.originalname).name}.webp`;
-
-    const resizedImageBuffer = await sharp(file.buffer)
-        .resize({ width: 800, height: 800, fit: 'inside' })
-        .withMetadata()
-        .webp()
-        .rotate()
-        .sharpen({ sigma: 1 })
-        .toBuffer();
-
-    // Set up the S3 upload parameters
-    const params = {
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: `${fileName}`,
-        Body: resizedImageBuffer,
-        ContentType: 'image/webp'
-    };
-
-    // Upload the file to S3
-    s3.upload(params, async (err, data) => {
-        if (err) {
-            return res.status(500).send('The product image could not be uploaded to AWS S3');
+        // Retrieve the uploaded file from the request
+        const file = req.file;
+        if (!file) {
+            return res.status(400).send('No image in the request');
         }
 
-        // Construct the base URL for the product image
-        const basePath = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`;
-
-        // Create a new product object with the uploaded image URL
-
-        const mineralString = req.body.mineral;
-        const mineralArray = mineralString.split(',').map((id) => new ObjectId(id));
-        const subcategoryString = req.body.subcategory;
-        const subcategoryArray = subcategoryString.split(',').map((id) => new ObjectId(id));
-        const colorString = req.body.color;
-        const colorArray = colorString.split(',').map((id) => new ObjectId(id));
-
-        let imageUrl = `${basePath}${fileName}`;
-        imageUrl = encodeURI(imageUrl);
-
-        let product = new Product({
-            name: req.body.name,
-            description: req.body.description,
-            image: imageUrl,
-            price: req.body.price,
-            category: req.body.category,
-            mineral: mineralArray,
-            subcategory: subcategoryArray,
-            color: colorArray
-            //isFeatured: req.body.isFeatured
-        });
-
-        // Save the product to the database
-        product = await product.save();
-
-        if (!product) {
-            return res.status(500).send('The product cannot be created');
-        }
-
-        clearAllCache();
-
-        // Send the product object as the response to the client
-        res.send(product);
-    });
-});
-
-router.put('/:id', uploadOptions.single('image'), async (req, res) => {
-    if (!mongoose.isValidObjectId(req.params.id)) {
-        return res.status(400).send('Invalid Product Id');
-    }
-    const category = await Category.findById(req.body.category);
-    if (!category) return res.status(400).send('Invalid Category');
-    // TODO DO the above for mineral and subcategory without breaking the program due ID Array!!
-
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(400).send('Invalid Product!');
-
-    const file = req.file;
-
-    let imagePath = product.image;
-
-    if (file) {
-        if (product.image) {
-            const url = new URL(product.image);
-            const key = decodeURIComponent(url.pathname.substring(1));
-            const deleteParams = {
-                Bucket: process.env.AWS_BUCKET_NAME,
-                Key: key
-            };
-            try {
-                await s3.deleteObject(deleteParams).promise();
-            } catch (err) {
-                return res.status(500).send('Error deleting old image');
-            }
-        }
-
-        const newFileName = `${path.parse(file.originalname).name}.webp`;
+        // Create a unique filename for the image to be stored in S3
+        const fileName = `${path.parse(file.originalname).name}.webp`;
 
         const resizedImageBuffer = await sharp(file.buffer)
             .resize({ width: 800, height: 800, fit: 'inside' })
@@ -215,105 +136,216 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
             .sharpen({ sigma: 1 })
             .toBuffer();
 
+        // Set up the S3 upload parameters
         const params = {
             Bucket: process.env.AWS_BUCKET_NAME,
-            Key: newFileName,
+            Key: `${fileName}`,
             Body: resizedImageBuffer,
             ContentType: 'image/webp'
         };
 
-        try {
-            await s3.upload(params).promise();
+        // Upload the file to S3
+        s3.upload(params, async (err, data) => {
+            if (err) {
+                return res.status(500).send('The product image could not be uploaded to AWS S3');
+            }
 
             // Construct the base URL for the product image
             const basePath = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`;
-            imagePath = encodeURI(`${basePath}${newFileName}`);
-        } catch (err) {
-            return res.status(500).send('Error uploading new image');
-        }
+
+            // Create a new product object with the uploaded image URL
+
+            const mineralString = req.body.mineral;
+            const mineralArray = mineralString.split(',').map((id) => new ObjectId(id));
+            const subcategoryString = req.body.subcategory;
+            const subcategoryArray = subcategoryString.split(',').map((id) => new ObjectId(id));
+            const colorString = req.body.color;
+            const colorArray = colorString.split(',').map((id) => new ObjectId(id));
+
+            let imageUrl = `${basePath}${fileName}`;
+            imageUrl = encodeURI(imageUrl);
+
+            let product = new Product({
+                name: req.body.name,
+                description: req.body.description,
+                image: imageUrl,
+                price: req.body.price,
+                category: req.body.category,
+                mineral: mineralArray,
+                subcategory: subcategoryArray,
+                color: colorArray
+                //isFeatured: req.body.isFeatured
+            });
+
+            // Save the product to the database
+            product = await product.save();
+
+            if (!product) {
+                return res.status(500).send('The product cannot be created');
+            }
+
+            clearAllCache();
+
+            // Send the product object as the response to the client
+            res.status(200).json(product);
+        });
+    } catch (error) {
+        console.error('Error uploading product: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
-
-    const mineralString = req.body.mineral;
-    const mineralArray = mineralString.split(',').map((id) => new ObjectId(id));
-    const subcategoryString = req.body.subcategory;
-    const subcategoryArray = subcategoryString.split(',').map((id) => new ObjectId(id));
-    const colorString = req.body.color;
-    const colorArray = colorString.split(',').map((id) => new ObjectId(id));
-
-    const updatedProduct = await Product.findByIdAndUpdate(
-        req.params.id,
-        {
-            name: req.body.name,
-            description: req.body.description,
-            image: imagePath,
-            price: req.body.price,
-            category: req.body.category,
-            mineral: mineralArray,
-            subcategory: subcategoryArray,
-            color: colorArray
-            //isFeatured: req.body.isFeatured
-        },
-        { new: true }
-    );
-
-    if (!updatedProduct) return res.status(500).send('the product cannot be updated!');
-
-    clearAllCache();
-
-    res.send(updatedProduct);
 });
 
-router.delete('/:id', (req, res) => {
-    const productId = req.params.id;
+router.put('/:id', uploadOptions.single('image'), async (req, res) => {
+    const { id } = req.params;
 
-    if (!mongoose.isValidObjectId(productId)) {
-        return res.status(400).send('Invalid Product ID');
+    if (!id || !isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
     }
+    try {
+        const category = await Category.findById(req.body.category);
+        if (!category) return res.status(400).send('Invalid Category');
+        // TODO DO the above for mineral and subcategory without breaking the program due ID Array!!
 
-    Product.findByIdAndRemove(productId)
-        .then(async (product) => {
-            if (product) {
+        const product = await Product.findById(id);
+        if (!product) return res.status(400).send('Invalid Product!');
+
+        const file = req.file;
+
+        let imagePath = product.image;
+
+        if (file) {
+            if (product.image) {
                 const url = new URL(product.image);
                 const key = decodeURIComponent(url.pathname.substring(1));
                 const deleteParams = {
                     Bucket: process.env.AWS_BUCKET_NAME,
                     Key: key
                 };
-
-                if (product.image) {
-                    try {
-                        await s3.deleteObject(deleteParams).promise();
-                    } catch (err) {
-                        return res.status(500).send('Error deleting image');
-                    }
+                try {
+                    await s3.deleteObject(deleteParams).promise();
+                } catch (err) {
+                    return res.status(500).send('Error deleting old image');
                 }
-
-                clearAllCache();
-
-                return res.status(200).json({
-                    success: true,
-                    message: 'the product is deleted!'
-                });
-            } else {
-                return res.status(404).json({ success: false, message: 'product not found!' });
             }
-        })
-        .catch((err) => {
-            console.error('Error during product deletion:', err);
-            return res.status(500).json({ success: false, error: err.message });
-        });
+
+            const newFileName = `${path.parse(file.originalname).name}.webp`;
+
+            const resizedImageBuffer = await sharp(file.buffer)
+                .resize({ width: 800, height: 800, fit: 'inside' })
+                .withMetadata()
+                .webp()
+                .rotate()
+                .sharpen({ sigma: 1 })
+                .toBuffer();
+
+            const params = {
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: newFileName,
+                Body: resizedImageBuffer,
+                ContentType: 'image/webp'
+            };
+
+            try {
+                await s3.upload(params).promise();
+
+                // Construct the base URL for the product image
+                const basePath = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`;
+                imagePath = encodeURI(`${basePath}${newFileName}`);
+            } catch (err) {
+                return res.status(500).send('Error uploading new image');
+            }
+        }
+
+        const mineralString = req.body.mineral;
+        const mineralArray = mineralString.split(',').map((id) => new ObjectId(id));
+        const subcategoryString = req.body.subcategory;
+        const subcategoryArray = subcategoryString.split(',').map((id) => new ObjectId(id));
+        const colorString = req.body.color;
+        const colorArray = colorString.split(',').map((id) => new ObjectId(id));
+
+        const updatedProduct = await Product.findByIdAndUpdate(
+            req.params.id,
+            {
+                name: req.body.name,
+                description: req.body.description,
+                image: imagePath,
+                price: req.body.price,
+                category: req.body.category,
+                mineral: mineralArray,
+                subcategory: subcategoryArray,
+                color: colorArray
+                //isFeatured: req.body.isFeatured
+            },
+            { new: true }
+        );
+
+        if (!updatedProduct) return res.status(500).send('the product cannot be updated!');
+
+        clearAllCache();
+
+        res.status(200).json(updatedProduct);
+    } catch (error) {
+        console.error('Error updating product: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+});
+
+router.delete('/:id', async (req, res) => {
+    const { id } = req.params;
+
+    if (!id || !isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid or missing ID' });
+    }
+
+    try {
+        const product = await Product.findByIdAndRemove(id);
+
+        if (product) {
+            const url = new URL(product.image);
+            const key = decodeURIComponent(url.pathname.substring(1));
+            const deleteParams = {
+                Bucket: process.env.AWS_BUCKET_NAME,
+                Key: key
+            };
+
+            if (product.image) {
+                try {
+                    await s3.deleteObject(deleteParams).promise();
+                } catch (err) {
+                    return res.status(500).send('Error deleting image');
+                }
+            }
+
+            clearAllCache();
+
+            return res.status(200).json({
+                success: true,
+                message: 'The product is successfully deleted!'
+            });
+        } else {
+            return res.status(404).json({ success: false, message: 'product not found!' });
+        }
+    } catch (error) {
+        console.error('Error deleting product: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
 });
 
 router.get(`/get/count`, async (req, res) => {
-    const productCount = await Product.countDocuments((count) => count);
+    try {
+        const productCount = await Product.countDocuments((count) => count);
 
-    if (!productCount) {
-        res.status(500).json({ success: false });
+        if (!productCount || productCount.length === 0) {
+            return res.status(200).json([]);
+        }
+
+        res.status(200).json({
+            productCount: productCount
+        });
+    } catch (error) {
+        console.error('Error getting the count of all products: ', error);
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
-
-    res.send({
-        productCount: productCount
-    });
 });
 
 router.get(`/get/featured/:count`, async (req, res) => {
@@ -323,7 +355,7 @@ router.get(`/get/featured/:count`, async (req, res) => {
     if (!products) {
         res.status(500).json({ success: false });
     }
-    res.send(products);
+    res.status(200).json(products);
 });
 
 module.exports = router;

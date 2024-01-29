@@ -10,7 +10,7 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
         if (!benefitList || benefitList.length === 0) {
             return res.status(200).json([]);
         }
-        res.status(200).send(benefitList);
+        res.status(200).json(benefitList);
     } catch (error) {
         console.error('Error fetching benefits: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -33,7 +33,7 @@ router.get('/:id', cacheMiddleware(2000000), async (req, res) => {
                 message: 'The benefit with the given ID was not found.'
             });
         }
-        res.status(200).send(benefit);
+        res.status(200).json(benefit);
     } catch (error) {
         console.error('Error fetching benefit by Id: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
 
         clearAllCache();
 
-        res.status(201).send(benefit);
+        res.status(201).json(benefit);
     } catch (error) {
         console.error('Error posting benefit: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -80,7 +80,7 @@ router.put('/:id', async (req, res) => {
 
         clearAllCache();
 
-        res.send(benefit);
+        res.status(200).json(benefit);
     } catch (error) {
         console.error('Error updating benefit: ', error);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
