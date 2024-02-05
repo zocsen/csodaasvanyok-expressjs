@@ -24,24 +24,26 @@ const uploadOptions = multer({ storage: storage });
 router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
     try {
         let filter = {};
+
         if (req.query.categories) {
-            filter = { category: req.query.categories.split(',') };
+            filter.category = { $in: req.query.categories.split(',') };
         }
+
         if (req.query.minerals) {
-            filter = { mineral: req.query.minerals.split(',') };
+            filter.mineral = { $in: req.query.minerals.split(',') };
         }
         if (req.query.subcategory) {
-            const subcategoryName = req.query.subcategory;
-            const subcategory = await Subcategory.findOne({ name: subcategoryName });
+            const subcategoryNames = req.query.subcategories.split(',');
+            const subcategories = await Subcategory.find({ name: { $in: subcategoryNames } });
 
-            if (subcategory) {
-                filter.subcategory = subcategory._id;
+            if (subcategories.length > 0) {
+                filter = { subcategory: { $in: subcategories.map((sc) => sc._id) } };
             } else {
                 return res.status(404).send('Subcategory not found');
             }
         }
         if (req.query.colors) {
-            filter = { color: req.query.colors.split(',') };
+            filter.color = { $in: req.query.colors.split(',') };
         }
 
         //
