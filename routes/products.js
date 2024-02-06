@@ -25,14 +25,14 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
     try {
         let filter = {};
 
-        if (req.query.categories) {
+        if (req.query.categories && req.query.categories !== '') {
             filter.category = { $in: req.query.categories.split(',') };
         }
 
-        if (req.query.minerals) {
+        if (req.query.minerals && req.query.minerals !== '') {
             filter.mineral = { $in: req.query.minerals.split(',') };
         }
-        if (req.query.subcategory) {
+        if (req.query.subcategories && req.query.subcategories !== '') {
             const subcategoryNames = req.query.subcategories.split(',');
             const subcategories = await Subcategory.find({ name: { $in: subcategoryNames } });
 
@@ -42,7 +42,7 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
                 return res.status(404).send('Subcategory not found');
             }
         }
-        if (req.query.colors) {
+        if (req.query.colors && req.query.colors !== '') {
             filter.color = { $in: req.query.colors.split(',') };
         }
 
