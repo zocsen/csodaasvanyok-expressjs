@@ -37,7 +37,7 @@ router.get(`/`, cacheMiddleware(2000000), async (req, res) => {
             const subcategories = await Subcategory.find({ name: { $in: subcategoryNames } });
 
             if (subcategories.length > 0) {
-                filter = { subcategory: { $in: subcategories.map((sc) => sc._id) } };
+                filter.subcategory = { $in: subcategories.map((sc) => sc._id) };
             } else {
                 return res.status(404).send('Subcategory not found');
             }
