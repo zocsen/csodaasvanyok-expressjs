@@ -52,6 +52,18 @@ const orderSchema = mongoose.Schema({
     },
     deliveryMethod: {
         type: String
+    },
+    billingCountry: {
+        type: String
+    },
+    billingCity: {
+        type: String
+    },
+    billingZip: {
+        type: String
+    },
+    billingAddress1: {
+        type: String
     }
 });
 

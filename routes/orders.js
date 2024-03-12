@@ -155,7 +155,11 @@ router.post('/temp-order', async (req, res) => {
             name: req.body.deliveryInfo.name,
             user: req.body.deliveryInfo.user,
             email: req.body.deliveryInfo.email,
-            deliveryMethod: req.body.deliveryInfo.deliveryMethod
+            deliveryMethod: req.body.deliveryInfo.deliveryMethod,
+            billingCountry: req.body.deliveryInfo.billingCountry,
+            billingCity: req.body.deliveryInfo.billingCity,
+            billingZip: req.body.deliveryInfo.billingZip,
+            billingAddress: req.body.deliveryInfo.billingAddress1
         });
 
         tempOrder = await tempOrder.save();
