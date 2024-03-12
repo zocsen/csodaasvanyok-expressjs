@@ -159,7 +159,7 @@ router.post('/temp-order', async (req, res) => {
             billingCountry: req.body.deliveryInfo.billingCountry,
             billingCity: req.body.deliveryInfo.billingCity,
             billingZip: req.body.deliveryInfo.billingZip,
-            billingAddress: req.body.deliveryInfo.billingAddress1
+            billingAddress1: req.body.deliveryInfo.billingAddress1
         });
 
         tempOrder = await tempOrder.save();
