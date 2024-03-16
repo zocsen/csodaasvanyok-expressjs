@@ -158,7 +158,7 @@ router.post(`/`, uploadOptions.single("image"), async (req, res) => {
     };
 
     // Upload the file to S3
-    s3.upload(params, async (err, data) => {
+    s3.upload(params, async (err) => {
       if (err) {
         return res
           .status(500)
@@ -372,14 +372,14 @@ router.get(`/get/count`, async (req, res) => {
   }
 });
 
-router.get(`/get/featured/:count`, async (req, res) => {
-  const count = req.params.count ? req.params.count : 0;
-  //const products = await Product.find({ isFeatured: true }).limit(+count);
+// router.get(`/get/featured/:count`, async (req, res) => {
+//   const count = req.params.count ? req.params.count : 0;
+//   const products = await Product.find({ isFeatured: true }).limit(+count);
 
-  if (!products) {
-    res.status(500).json({ success: false });
-  }
-  res.status(200).json(products);
-});
+//   if (!products) {
+//     res.status(500).json({ success: false });
+//   }
+//   res.status(200).json(products);
+// });
 
 module.exports = router;

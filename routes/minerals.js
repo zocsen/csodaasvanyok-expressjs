@@ -1,5 +1,4 @@
 const { Mineral } = require("../models/mineral");
-const { Benefit } = require("../models/benefit");
 const express = require("express");
 const router = express.Router();
 const ObjectId = require("mongodb").ObjectId;
