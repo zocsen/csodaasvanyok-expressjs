@@ -171,12 +171,10 @@ router.post("/temp-order", async (req, res) => {
     tempOrder = await tempOrder.save();
 
     if (!tempOrder) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Temporary order creation unsuccessful!",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Temporary order creation unsuccessful!",
+      });
     }
 
     res.status(200).json({ tempOrderId: tempOrder._id });
@@ -380,7 +378,7 @@ router.get("/get/totalsales", async (req, res) => {
 
 router.get(`/get/count`, async (req, res) => {
   try {
-    const orderCount = await Order.countDocuments;
+    const orderCount = await Order.countDocuments();
 
     res.send({
       orderCount: orderCount,

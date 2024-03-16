@@ -137,7 +137,7 @@ router.delete("/:id", (req, res) => {
 });
 
 router.get(`/get/count`, async (req, res) => {
-  const userCount = await User.countDocuments;
+  const userCount = await User.countDocuments();
 
   res.send({
     userCount: userCount,
