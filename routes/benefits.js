@@ -114,7 +114,7 @@ router.delete("/:id", async (req, res) => {
   }
 
   try {
-    const benefit = await Benefit.findByIdAndDelete()(id);
+    const benefit = await Benefit.findByIdAndDelete(id);
 
     if (!benefit) {
       return res

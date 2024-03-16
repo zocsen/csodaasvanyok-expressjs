@@ -122,7 +122,7 @@ router.delete("/:id", async (req, res) => {
   }
 
   try {
-    const color = await Color.findByIdAndDelete()(id);
+    const color = await Color.findByIdAndDelete(id);
 
     if (!color) {
       return res

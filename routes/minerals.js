@@ -131,7 +131,7 @@ router.delete("/:id", async (req, res) => {
       .json({ success: false, message: "Invalid or missing ID" });
   }
   try {
-    const mineral = await Mineral.findByIdAndDelete()(id);
+    const mineral = await Mineral.findByIdAndDelete(id);
     if (!mineral) {
       return res
         .status(404)

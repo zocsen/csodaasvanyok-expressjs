@@ -118,7 +118,7 @@ router.delete("/:id", async (req, res) => {
   }
 
   try {
-    const category = await Category.findByIdAndDelete()(id);
+    const category = await Category.findByIdAndDelete(id);
 
     if (!category) {
       return res

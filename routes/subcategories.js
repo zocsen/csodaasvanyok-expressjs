@@ -112,7 +112,7 @@ router.delete("/:id", (req, res) => {
       .json({ success: false, message: "Invalid or missing ID" });
   }
   try {
-    const subcategory = Subcategory.findByIdAndDelete()(id);
+    const subcategory = Subcategory.findByIdAndDelete(id);
 
     if (!subcategory) {
       return res
