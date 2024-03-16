@@ -334,7 +334,7 @@ router.delete("/:id", async (req, res) => {
   }
 
   try {
-    const order = await Order.findByIdAndRemove(id);
+    const order = await Order.findByIdAndDelete()(id);
 
     if (!order) {
       return res
@@ -345,7 +345,7 @@ router.delete("/:id", async (req, res) => {
     if (order.orderItems && order.orderItems.length > 0) {
       await Promise.all(
         order.orderItems.map(async (orderItemId) => {
-          await OrderItem.findByIdAndRemove(orderItemId);
+          await OrderItem.findByIdAndDelete()(orderItemId);
         })
       );
     }

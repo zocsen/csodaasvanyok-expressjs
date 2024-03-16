@@ -119,7 +119,7 @@ router.post("/register", async (req, res) => {
 });
 
 router.delete("/:id", (req, res) => {
-  User.findByIdAndRemove(req.params.id)
+  User.findByIdAndDelete()(req.params.id)
     .then((user) => {
       if (user) {
         return res

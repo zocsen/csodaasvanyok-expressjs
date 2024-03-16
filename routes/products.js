@@ -324,7 +324,7 @@ router.delete("/:id", async (req, res) => {
   }
 
   try {
-    const product = await Product.findByIdAndRemove(id);
+    const product = await Product.findByIdAndDelete()(id);
 
     if (product) {
       const url = new URL(product.image);
