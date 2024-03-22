@@ -167,14 +167,14 @@ router.post(`/`, uploadOptions.single("image"), async (req, res) => {
     // Set up the S3 upload parameters
     const mainParams = {
       Bucket: process.env.AWS_BUCKET_NAME,
-      Key: `${fileName}`,
+      Key: `main/${fileName}`,
       Body: resizedMainImageBuffer,
       ContentType: "image/webp",
     };
 
     const smallParams = {
       Bucket: process.env.AWS_BUCKET_NAME,
-      Key: `${fileName}`,
+      Key: `small/${fileName}`,
       Body: resizedSmallImageBuffer,
       ContentType: "image/webp",
     };
