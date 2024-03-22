@@ -17,6 +17,13 @@ const s3 = new AWS.S3({
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
 
+const uploadToS3 = async (params) => {
+  const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+  const client = new S3Client({ region: process.env.AWS_REGION });
+  const command = new PutObjectCommand(params);
+  await client.send(command);
+};
+
 // Use multer memory storage to upload files to memory instead of the local file system
 const storage = multer.memoryStorage();
 const uploadOptions = multer({ storage: storage });
@@ -141,7 +148,7 @@ router.post(`/`, uploadOptions.single("image"), async (req, res) => {
     // Create a unique filename for the image to be stored in S3
     const fileName = `${path.parse(file.originalname).name}.webp`;
 
-    const resizedImageBuffer = await sharp(file.buffer)
+    const resizedMainImageBuffer = await sharp(file.buffer)
       .resize({ width: 800, height: 800, fit: "inside" })
       .withMetadata()
       .webp()
@@ -149,65 +156,76 @@ router.post(`/`, uploadOptions.single("image"), async (req, res) => {
       .sharpen({ sigma: 1 })
       .toBuffer();
 
+    const resizedSmallImageBuffer = await sharp(file.buffer)
+      .resize({ width: 360, height: 360, fit: "inside" })
+      .withMetadata()
+      .webp()
+      .rotate()
+      .sharpen({ sigma: 1 })
+      .toBuffer();
+
     // Set up the S3 upload parameters
-    const params = {
+    const mainParams = {
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: `${fileName}`,
-      Body: resizedImageBuffer,
+      Body: resizedMainImageBuffer,
       ContentType: "image/webp",
     };
 
-    // Upload the file to S3
-    s3.upload(params, async (err) => {
-      if (err) {
-        return res
-          .status(500)
-          .send("The product image could not be uploaded to AWS S3");
-      }
+    const smallParams = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: `${fileName}`,
+      Body: resizedSmallImageBuffer,
+      ContentType: "image/webp",
+    };
 
-      // Construct the base URL for the product image
-      const basePath = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`;
+    await uploadToS3(mainParams);
+    await uploadToS3(smallParams);
 
-      // Create a new product object with the uploaded image URL
+    // Construct the base URL for the product image
+    const basePath = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`;
 
-      const mineralString = req.body.mineral;
-      const mineralArray = mineralString
-        .split(",")
-        .map((id) => new ObjectId(id));
-      const subcategoryString = req.body.subcategory;
-      const subcategoryArray = subcategoryString
-        .split(",")
-        .map((id) => new ObjectId(id));
-      const colorString = req.body.color;
-      const colorArray = colorString.split(",").map((id) => new ObjectId(id));
+    // Create a new product object with the uploaded image URL
 
-      let imageUrl = `${basePath}${fileName}`;
-      imageUrl = encodeURI(imageUrl);
+    const mineralString = req.body.mineral;
+    const mineralArray = mineralString.split(",").map((id) => new ObjectId(id));
+    const subcategoryString = req.body.subcategory;
+    const subcategoryArray = subcategoryString
+      .split(",")
+      .map((id) => new ObjectId(id));
+    const colorString = req.body.color;
+    const colorArray = colorString.split(",").map((id) => new ObjectId(id));
 
-      let product = new Product({
-        name: req.body.name,
-        description: req.body.description,
-        image: imageUrl,
-        price: req.body.price,
-        category: req.body.category,
-        mineral: mineralArray,
-        subcategory: subcategoryArray,
-        color: colorArray,
-        //isFeatured: req.body.isFeatured
-      });
+    let mainImageUrl = `${basePath}main/${fileName}`;
+    mainImageUrl = encodeURI(mainImageUrl);
 
-      // Save the product to the database
-      product = await product.save();
+    let smallImageUrl = `${basePath}small/${fileName}`;
+    smallImageUrl = encodeURI(smallImageUrl);
 
-      if (!product) {
-        return res.status(500).send("The product cannot be created");
-      }
-
-      clearAllCache();
-
-      // Send the product object as the response to the client
-      res.status(200).json(product);
+    let product = new Product({
+      name: req.body.name,
+      description: req.body.description,
+      mainImage: mainImageUrl,
+      smallImage: smallImageUrl,
+      price: req.body.price,
+      category: req.body.category,
+      mineral: mineralArray,
+      subcategory: subcategoryArray,
+      color: colorArray,
+      //isFeatured: req.body.isFeatured
     });
+
+    // Save the product to the database
+    product = await product.save();
+
+    if (!product) {
+      return res.status(500).send("The product cannot be created");
+    }
+
+    clearAllCache();
+
+    // Send the product object as the response to the client
+    res.status(200).json(product);
   } catch (error) {
     console.error("Error uploading product: ", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });

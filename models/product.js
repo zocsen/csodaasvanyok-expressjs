@@ -1,62 +1,73 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const productSchema = mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
+  name: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  mainImage: {
+    type: String,
+    default: "",
+  },
+  smallImage: {
+    type: String,
+    default: "",
+  },
+  images: [
+    {
+      type: String,
     },
-    description: {
-        type: String,
-        required: true
+  ],
+  price: {
+    type: Number,
+    default: 0,
+  },
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
+    required: true,
+  },
+  mineral: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Mineral",
+      required: true,
     },
-    image: {
-        type: String,
-        default: ''
+  ],
+  subcategory: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subcategory",
+      required: true,
     },
-    images: [{
-        type: String
-    }],
-    price : {
-        type: Number,
-        default:0
+  ],
+  color: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Color",
+      required: true,
     },
-    category: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Category',
-        required: true,
-    },
-    mineral: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Mineral',
-        required: true
-    }],
-    subcategory: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Subcategory',
-        required: true,
-    }],
-    color: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Color',
-        required: true
-    }],
-    // isFeatured: {
-    //     type: Boolean,
-    //     default: false,
-    // },
-    dateCreated: {
-        type: Date,
-        default: Date.now,
-    },
-})
-
-productSchema.virtual('id').get(function () {
-    return this._id.toHexString();
+  ],
+  // isFeatured: {
+  //     type: Boolean,
+  //     default: false,
+  // },
+  dateCreated: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-productSchema.set('toJSON', {
-    virtuals: true,
+productSchema.virtual("id").get(function () {
+  return this._id.toHexString();
 });
 
+productSchema.set("toJSON", {
+  virtuals: true,
+});
 
-exports.Product = mongoose.model('Product', productSchema);
+exports.Product = mongoose.model("Product", productSchema);
