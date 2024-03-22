@@ -276,22 +276,22 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
     let smallImagePath = product.smallImage;
     let mainImagePath = product.mainImage;
 
-    if (file) {
-      if (product.smallImage) {
-        try {
-          await deleteProductImage(product.smallImage);
-        } catch (error) {
-          return res.status(500).send(error.message);
-        }
+    if (product.smallImage) {
+      try {
+        await deleteProductImage(product.smallImage);
+      } catch (error) {
+        return res.status(500).send(error.message);
       }
-      if (product.mainImage) {
-        try {
-          await deleteProductImage(product.mainImage);
-        } catch (error) {
-          return res.status(500).send(error.message);
-        }
+    }
+    if (product.mainImage) {
+      try {
+        await deleteProductImage(product.mainImage);
+      } catch (error) {
+        return res.status(500).send(error.message);
       }
+    }
 
+    if (file) {
       const newFileName = `${path.parse(file.originalname).name}.webp`;
 
       const resizedMainImageBuffer = await sharp(file.buffer)
