@@ -19,7 +19,7 @@ const s3 = new AWS.S3({
 
 const uploadToS3 = async (params) => {
   const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
-  const client = new S3Client({ region: process.env.AWS_REGION });
+  const client = new S3Client({ region: process.env.AWS_BUCKET_REGION });
   const command = new PutObjectCommand(params);
   await client.send(command);
 };
