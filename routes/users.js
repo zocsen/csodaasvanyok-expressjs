@@ -79,7 +79,7 @@ router.post("/login", async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
   const secret = process.env.secret;
   if (!user) {
-    return res.status(400).send("The user not found");
+    return res.status(400).json({ error: "The user not found" });
   }
 
   if (user && bcrypt.compareSync(req.body.password, user.passwordHash)) {
@@ -92,9 +92,9 @@ router.post("/login", async (req, res) => {
       { expiresIn: "30d" }
     );
 
-    res.status(200).send({ user: user.email, token: token });
+    res.status(200).json({ user: user.email, token: token });
   } else {
-    res.status(400).send("password is wrong!");
+    res.status(400).json("password is wrong!");
   }
 });
 

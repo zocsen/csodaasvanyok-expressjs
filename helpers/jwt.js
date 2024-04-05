@@ -17,6 +17,7 @@ function authJwt() {
       { url: /\/api\/v1\/subcategories(.*)/, methods: ["GET", "OPTIONS"] },
       { url: /\/api\/v1\/colors(.*)/, methods: ["GET", "OPTIONS"] },
       { url: /\/api\/v1\/orders(.*)/, methods: ["GET", "OPTIONS", "POST"] },
+      { url: `${api}/verifyToken`, methods: ["POST"] },
       `${api}/users/login`,
       `${api}/users/register`,
     ],
@@ -24,11 +25,11 @@ function authJwt() {
 }
 
 async function isRevoked(req, payload, done) {
-  if (!payload.isAdmin) {
+  if (payload.isAdmin) {
     done(null, true);
+  } else {
+    done();
   }
-
-  done();
 }
 
 module.exports = authJwt;

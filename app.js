@@ -10,6 +10,8 @@ const { verifyToken } = require("./authMiddleware");
 const compression = require("compression");
 const path = require("path");
 
+const api = process.env.API_URL;
+
 //remove these once stable
 app.use(
   cors({
@@ -49,8 +51,6 @@ const productsRoutes = require("./routes/products");
 const usersRoutes = require("./routes/users");
 const ordersRoutes = require("./routes/orders");
 
-const api = process.env.API_URL;
-
 app.use(`${api}/categories`, categoriesRoutes);
 app.use(`${api}/minerals`, mineralsRoutes);
 app.use(`${api}/subcategories`, subcategoriesRoutes);
@@ -61,7 +61,7 @@ app.use(`${api}/users`, usersRoutes);
 app.use(`${api}/orders`, ordersRoutes);
 
 app.post(`${api}/verifyToken`, verifyToken, (req, res) => {
-  res.json({ isValid: true });
+  res.json({ isAdmin: true });
 });
 
 //Database
