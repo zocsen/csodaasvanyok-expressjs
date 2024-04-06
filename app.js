@@ -61,7 +61,7 @@ app.use(`${api}/users`, usersRoutes);
 app.use(`${api}/orders`, ordersRoutes);
 
 app.post(`${api}/verifyToken`, verifyToken, (req, res) => {
-  res.json({ isAdmin: true });
+  res.json({ isValid: true });
 });
 
 //Database
