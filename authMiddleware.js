@@ -11,11 +11,11 @@ async function verifyToken(req, res, next) {
   try {
     const secret = process.env.secret;
     const decoded = jwt.verify(token, secret, { algorithms: ["HS256"] });
-    const user = await User.findById(decoded.userId);
+    // const user = await User.findById(decoded.userId);
 
-    if (!user || !user.isAdmin) {
-      return res.status(401).json({ error: "Unauthorized, not admin" });
-    }
+    // if (!user || !user.isAdmin) {
+    //   return res.status(401).json({ error: "Unauthorized, not admin" });
+    // }
 
     if (decoded.isAdmin) {
       req.user = decoded;
