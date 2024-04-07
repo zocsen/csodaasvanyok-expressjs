@@ -9,11 +9,7 @@ const productSchema = mongoose.Schema({
     type: String,
     required: true,
   },
-  mainImage: {
-    type: String,
-    default: "",
-  },
-  smallImage: {
+  image: {
     type: String,
     default: "",
   },

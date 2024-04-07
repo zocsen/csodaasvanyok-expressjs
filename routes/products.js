@@ -10,46 +10,12 @@ const AWS = require("aws-sdk");
 const ObjectId = require("mongodb").ObjectId;
 const sharp = require("sharp");
 const { cacheMiddleware, clearAllCache } = require("../cacheMiddleware");
-const {
-  S3Client,
-  DeleteObjectCommand,
-  PutObjectCommand,
-} = require("@aws-sdk/client-s3");
 
 // Create an instance of the AWS S3 object with the access key ID and secret access key
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
-
-const s3Client = new S3Client({
-  region: process.env.AWS_BUCKET_REGION, // Make sure to set your region
-});
-
-const basePath = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`;
-
-const uploadToS3 = async (params) => {
-  const client = new S3Client({ region: process.env.AWS_BUCKET_REGION });
-  const command = new PutObjectCommand(params);
-  await client.send(command);
-};
-
-async function deleteProductImage(productImage) {
-  const url = new URL(productImage);
-  const key = decodeURIComponent(url.pathname.substring(1));
-  const deleteParams = {
-    Bucket: process.env.AWS_BUCKET_NAME,
-    Key: key,
-  };
-  const deleteCommand = new DeleteObjectCommand(deleteParams);
-
-  try {
-    await s3Client.send(deleteCommand);
-  } catch (err) {
-    console.error("Error deleting old image: ", err);
-    throw new Error("Error deleting old image");
-  }
-}
 
 // Use multer memory storage to upload files to memory instead of the local file system
 const storage = multer.memoryStorage();
@@ -175,7 +141,7 @@ router.post(`/`, uploadOptions.single("image"), async (req, res) => {
     // Create a unique filename for the image to be stored in S3
     const fileName = `${path.parse(file.originalname).name}.webp`;
 
-    const resizedMainImageBuffer = await sharp(file.buffer)
+    const resizedImageBuffer = await sharp(file.buffer)
       .resize({ width: 800, height: 800, fit: "inside" })
       .withMetadata()
       .webp()
@@ -183,72 +149,65 @@ router.post(`/`, uploadOptions.single("image"), async (req, res) => {
       .sharpen({ sigma: 1 })
       .toBuffer();
 
-    const resizedSmallImageBuffer = await sharp(file.buffer)
-      .resize({ width: 360, height: 360, fit: "inside" })
-      .withMetadata()
-      .webp()
-      .rotate()
-      .sharpen({ sigma: 1 })
-      .toBuffer();
-
     // Set up the S3 upload parameters
-    const mainParams = {
+    const params = {
       Bucket: process.env.AWS_BUCKET_NAME,
-      Key: `main/${fileName}`,
-      Body: resizedMainImageBuffer,
+      Key: `${fileName}`,
+      Body: resizedImageBuffer,
       ContentType: "image/webp",
     };
 
-    const smallParams = {
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: `small/${fileName}`,
-      Body: resizedSmallImageBuffer,
-      ContentType: "image/webp",
-    };
+    // Upload the file to S3
+    s3.upload(params, async (err) => {
+      if (err) {
+        return res
+          .status(500)
+          .send("The product image could not be uploaded to AWS S3");
+      }
 
-    await uploadToS3(mainParams);
-    await uploadToS3(smallParams);
+      // Construct the base URL for the product image
+      const basePath = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`;
 
-    // Create a new product object with the uploaded image URL
-    const mineralString = req.body.mineral;
-    const mineralArray = mineralString.split(",").map((id) => new ObjectId(id));
-    const subcategoryString = req.body.subcategory;
-    const subcategoryArray = subcategoryString
-      .split(",")
-      .map((id) => new ObjectId(id));
-    const colorString = req.body.color;
-    const colorArray = colorString.split(",").map((id) => new ObjectId(id));
+      // Create a new product object with the uploaded image URL
 
-    let mainImageUrl = `${basePath}main/${fileName}`;
-    mainImageUrl = encodeURI(mainImageUrl);
+      const mineralString = req.body.mineral;
+      const mineralArray = mineralString
+        .split(",")
+        .map((id) => new ObjectId(id));
+      const subcategoryString = req.body.subcategory;
+      const subcategoryArray = subcategoryString
+        .split(",")
+        .map((id) => new ObjectId(id));
+      const colorString = req.body.color;
+      const colorArray = colorString.split(",").map((id) => new ObjectId(id));
 
-    let smallImageUrl = `${basePath}small/${fileName}`;
-    smallImageUrl = encodeURI(smallImageUrl);
+      let imageUrl = `${basePath}${fileName}`;
+      imageUrl = encodeURI(imageUrl);
 
-    let product = new Product({
-      name: req.body.name,
-      description: req.body.description,
-      mainImage: mainImageUrl,
-      smallImage: smallImageUrl,
-      price: req.body.price,
-      category: req.body.category,
-      mineral: mineralArray,
-      subcategory: subcategoryArray,
-      color: colorArray,
-      //isFeatured: req.body.isFeatured
+      let product = new Product({
+        name: req.body.name,
+        description: req.body.description,
+        image: imageUrl,
+        price: req.body.price,
+        category: req.body.category,
+        mineral: mineralArray,
+        subcategory: subcategoryArray,
+        color: colorArray,
+        //isFeatured: req.body.isFeatured
+      });
+
+      // Save the product to the database
+      product = await product.save();
+
+      if (!product) {
+        return res.status(500).send("The product cannot be created");
+      }
+
+      clearAllCache();
+
+      // Send the product object as the response to the client
+      res.status(200).json(product);
     });
-
-    // Save the product to the database
-    product = await product.save();
-
-    if (!product) {
-      return res.status(500).send("The product cannot be created");
-    }
-
-    clearAllCache();
-
-    // Send the product object as the response to the client
-    res.status(200).json(product);
   } catch (error) {
     console.error("Error uploading product: ", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -273,28 +232,26 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
 
     const file = req.file;
 
-    let smallImagePath = product.smallImage;
-    let mainImagePath = product.mainImage;
-
-    if (product.smallImage) {
-      try {
-        await deleteProductImage(product.smallImage);
-      } catch (error) {
-        return res.status(500).send(error.message);
-      }
-    }
-    if (product.mainImage) {
-      try {
-        await deleteProductImage(product.mainImage);
-      } catch (error) {
-        return res.status(500).send(error.message);
-      }
-    }
+    let imagePath = product.image;
 
     if (file) {
+      if (product.image) {
+        const url = new URL(product.image);
+        const key = decodeURIComponent(url.pathname.substring(1));
+        const deleteParams = {
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: key,
+        };
+        try {
+          await s3.deleteObject(deleteParams).promise();
+        } catch (err) {
+          return res.status(500).send("Error deleting old image");
+        }
+      }
+
       const newFileName = `${path.parse(file.originalname).name}.webp`;
 
-      const resizedMainImageBuffer = await sharp(file.buffer)
+      const resizedImageBuffer = await sharp(file.buffer)
         .resize({ width: 800, height: 800, fit: "inside" })
         .withMetadata()
         .webp()
@@ -302,34 +259,19 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
         .sharpen({ sigma: 1 })
         .toBuffer();
 
-      const resizedSmallImageBuffer = await sharp(file.buffer)
-        .resize({ width: 360, height: 360, fit: "inside" })
-        .withMetadata()
-        .webp()
-        .rotate()
-        .sharpen({ sigma: 1 })
-        .toBuffer();
-
-      // Set up the S3 upload parameters
-      const mainParams = {
+      const params = {
         Bucket: process.env.AWS_BUCKET_NAME,
-        Key: `main/${newFileName}`,
-        Body: resizedMainImageBuffer,
-        ContentType: "image/webp",
-      };
-
-      const smallParams = {
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: `small/${newFileName}`,
-        Body: resizedSmallImageBuffer,
+        Key: newFileName,
+        Body: resizedImageBuffer,
         ContentType: "image/webp",
       };
 
       try {
-        await uploadToS3(smallParams);
-        await uploadToS3(mainParams);
-        smallImagePath = encodeURI(`${basePath}${newFileName}`);
-        mainImagePath = encodeURI(`${basePath}${newFileName}`);
+        await s3.upload(params).promise();
+
+        // Construct the base URL for the product image
+        const basePath = `https://${process.env.AWS_BUCKET_NAME}.s3.amazonaws.com/`;
+        imagePath = encodeURI(`${basePath}${newFileName}`);
       } catch (err) {
         return res.status(500).send("Error uploading new image");
       }
@@ -349,8 +291,7 @@ router.put("/:id", uploadOptions.single("image"), async (req, res) => {
       {
         name: req.body.name,
         description: req.body.description,
-        smallImage: smallImagePath,
-        mainImage: mainImagePath,
+        image: imagePath,
         price: req.body.price,
         category: req.body.category,
         mineral: mineralArray,
@@ -386,18 +327,18 @@ router.delete("/:id", async (req, res) => {
     const product = await Product.findByIdAndDelete(id);
 
     if (product) {
-      if (product.smallImage) {
+      const url = new URL(product.image);
+      const key = decodeURIComponent(url.pathname.substring(1));
+      const deleteParams = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: key,
+      };
+
+      if (product.image) {
         try {
-          await deleteProductImage(product.smallImage);
-        } catch (error) {
-          return res.status(500).send(error.message);
-        }
-      }
-      if (product.mainImage) {
-        try {
-          await deleteProductImage(product.mainImage);
-        } catch (error) {
-          return res.status(500).send(error.message);
+          await s3.deleteObject(deleteParams).promise();
+        } catch (err) {
+          return res.status(500).send("Error deleting image");
         }
       }
 
